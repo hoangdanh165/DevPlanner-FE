@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, Button, Container } from "@mui/material";
+import { AppBar, Toolbar, Button, Container, Box } from "@mui/material";
 
 interface HeaderProps {
   themeToggleButton?: React.ReactNode;
@@ -14,13 +14,19 @@ export function Header({ themeToggleButton }: HeaderProps) {
     >
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ minHeight: 64 }}>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, fontWeight: 600 }}
-          >
-            DevPlanner
-          </Typography>
+          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
+            <Box
+              component="img"
+              src="/logo-test.png"
+              alt="DevPlanner Logo"
+              sx={{
+                height: { xs: 88, sm: 96, md: 104 },
+                maxWidth: { xs: 200, sm: 240, md: 280 },
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
+          </Box>
           {themeToggleButton}
           <Button variant="outlined" color="inherit">
             Login

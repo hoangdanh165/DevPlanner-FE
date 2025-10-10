@@ -4,6 +4,7 @@ import {
   createTheme,
   CssBaseline,
   Button,
+  Box,
 } from "@mui/material";
 import { ThemeProvider, useThemeContext } from "@/themes/theme";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -31,8 +32,13 @@ function HomePage() {
   return (
     <MuiThemeProvider theme={muiTheme}>
       <CssBaseline />
-      <div
-        style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: "background.default",
+        }}
       >
         <Header
           themeToggleButton={
@@ -46,15 +52,27 @@ function HomePage() {
             </Button>
           }
         />
-        <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            px: { xs: 1, sm: 2, md: 0 },
+            py: { xs: 2, sm: 3, md: 4 },
+            gap: { xs: 2, sm: 3, md: 4 },
+            width: "100%",
+            maxWidth: "100vw",
+          }}
+        >
           <InputSection
             value={projectInput}
             onChange={setProjectInput}
             onGenerate={handleGenerate}
           />
           <TabsSection activeTab={activeTab} onTabChange={setActiveTab} />
-        </main>
-      </div>
+        </Box>
+      </Box>
     </MuiThemeProvider>
   );
 }

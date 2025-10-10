@@ -8,7 +8,7 @@ const App = lazy(() => import("../App"));
 // Layouts
 
 // Auth pages
-const SignIn = lazy(() => import("../pages/auth/sign-in/SignIn"));
+const SignIn = lazy(() => import("@/pages/auth/sign-in/SignIn"));
 const SignUp = lazy(() => import("../pages/auth/sign-up/SignUp"));
 // const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 
@@ -49,14 +49,14 @@ const routes = [
       </Suspense>
     ),
     children: [
-      // {
-      //   index: true,
-      //   element: (
-      //     <PersistSignin>
-      //       <HomeRedirect />
-      //     </PersistSignin>
-      //   ),
-      // },
+      {
+        index: true,
+        element: (
+          <PersistSignin>
+            <LandingPage />
+          </PersistSignin>
+        ),
+      },
       {
         path: rootPaths.root,
         element: <PersistSignin>{createMainLayoutRoutes()}</PersistSignin>,
@@ -64,7 +64,7 @@ const routes = [
           {
             path: paths.main,
             element: (
-              // <PrivateRoute allowedRoles={["sale"]}>
+              // <PrivateRoute allowedRoles={["user"]}>
               <HomePage />
               // </PrivateRoute>
             ),
