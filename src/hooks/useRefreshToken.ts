@@ -1,5 +1,5 @@
-import useAuth from "./useAuth";
-import axios from "../services/axios";
+import useAuth from "@/hooks/useAuth";
+import axios from "@/services/axios";
 
 const REFRESH_URL = "/api/v1/users/refresh/";
 

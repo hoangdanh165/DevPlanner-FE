@@ -1,5 +1,5 @@
 import { useContext, useDebugValue } from "react";
-import AuthContext from "../contexts/AuthProvider";
+import AuthContext from "@/contexts/AuthProvider";
 
 export interface AuthData {
   role: string;

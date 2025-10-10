@@ -1,6 +1,11 @@
 import { Backdrop, CircularProgress } from "@mui/material";
+import type { FC } from "react";
 
-const LoadingOverlay = ({ loading }) => {
+interface LoadingOverlayProps {
+  loading: boolean;
+}
+
+const LoadingOverlay: FC<LoadingOverlayProps> = ({ loading }) => {
   return (
     <Backdrop
       open={loading}

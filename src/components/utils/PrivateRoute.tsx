@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useLocation, Navigate } from "react-router-dom";
-import useAuth from "../../hooks/useAuth";
+import useAuth from "@/hooks/useAuth";
 
 interface PrivateRouteProps {
   allowedRoles: string[];

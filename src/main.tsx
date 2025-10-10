@@ -5,12 +5,12 @@ import {
   CssBaseline,
   Experimental_CssVarsProvider as CssVarsProvider,
 } from "@mui/material";
-import router from "./routes/router";
+import router from "@/routes/router";
 import "./index.css";
-import { AuthProvider } from "./contexts/AuthProvider";
+import { AuthProvider } from "@/contexts/AuthProvider";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { RecoilRoot } from "recoil";
-import { SocketContextProvider } from "./contexts/SocketContext";
+import { SocketContextProvider } from "@/contexts/SocketContext";
 // import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 // import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 

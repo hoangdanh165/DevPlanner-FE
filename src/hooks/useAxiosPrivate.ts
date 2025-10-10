@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { axiosPrivate } from "../services/axios";
-import useRefreshToken from "./useRefreshToken";
-import useAuth from "./useAuth";
+import { axiosPrivate } from "@/services/axios";
+import useRefreshToken from "@/hooks/useRefreshToken";
+import useAuth from "@/hooks/useAuth";
 import type {
   AxiosError,
   InternalAxiosRequestConfig,
@@ -9,7 +9,7 @@ import type {
 } from "axios";
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
-  sent?: boolean; // flag đánh dấu request đã retry
+  sent?: boolean;
 }
 
 const useAxiosPrivate = () => {
@@ -49,7 +49,7 @@ const useAxiosPrivate = () => {
 
             return axiosPrivate(prevRequest);
           } catch (refreshError) {
-            console.error("❌ Không thể refresh token:", refreshError);
+            console.error("❌ CAN NOT REFRESH TOKEN:", refreshError);
             return Promise.reject(refreshError);
           }
         }

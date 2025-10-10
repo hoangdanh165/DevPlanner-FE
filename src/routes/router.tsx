@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Outlet, createBrowserRouter } from "react-router-dom";
-import { rootPaths } from "./paths";
-import paths from "./paths";
+import { rootPaths } from "@/routes/paths";
+import paths from "@/routes/paths";
 
 const App = lazy(() => import("../App"));
 
@@ -19,16 +19,17 @@ const Banned = lazy(() => import("../pages/error/Banned"));
 const Forbidden = lazy(() => import("../pages/error/Forbidden"));
 
 // Home pages
-import LandingPage from "../pages/landing/LandingPage";
+import LandingPage from "@/pages/landing/LandingPage";
+import HomePage from "@/pages/common/HomePage";
 
 // Other components
-import PrivateRoute from "../components/utils/PrivateRoute";
-import IsSignedIn from "../components/utils/IsSignedIn";
-import PageLoader from "../components/loading/PageLoader";
-import Splash from "../components/loading/Splash";
+import PrivateRoute from "@/components/utils/PrivateRoute";
+import IsSignedIn from "@/components/utils/IsSignedIn";
+import PageLoader from "@/components/utils/PageLoader";
+import Splash from "@/components/utils/Splash";
 const PersistSignin = lazy(() => import("../components/utils/PersistSignin"));
 
-const createMainLayoutSaleRoutes = () => (
+const createMainLayoutRoutes = () => (
   <Suspense fallback={<PageLoader />}>
     <Outlet />
   </Suspense>
@@ -58,14 +59,14 @@ const routes = [
       // },
       {
         path: rootPaths.root,
-        element: <PersistSignin>{createMainLayoutSaleRoutes()}</PersistSignin>,
+        element: <PersistSignin>{createMainLayoutRoutes()}</PersistSignin>,
         children: [
           {
-            path: paths.invoice_management_sale,
+            path: paths.main,
             element: (
-              <PrivateRoute allowedRoles={["sale"]}>
-                <LandingPage />
-              </PrivateRoute>
+              // <PrivateRoute allowedRoles={["sale"]}>
+              <HomePage />
+              // </PrivateRoute>
             ),
           },
         ],

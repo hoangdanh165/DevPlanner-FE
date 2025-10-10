@@ -12,8 +12,8 @@ export default {
   sign_up: `${rootPaths.authRoot}/sign-up`,
   forgot_password: `${rootPaths.authRoot}/forgot-password`,
 
-  // Sale paths
-  invoice_management_sale: `${rootPaths.root}/invoice-management`,
+  // Main paths
+  main: `${rootPaths.root}/dev-planner`,
 
   // Home paths
   landing_page: `${rootPaths.homeRoot}/landing-page`,

@@ -2,7 +2,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import axios from "../../services/axios";
 import { Button } from "@mui/material";
 import { GoogleIcon } from "../../pages/auth/sign-in/components/CustomIcons";
-import useAuth from "../../hooks/useAuth";
+import useAuth from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const SIGN_IN_WITH_GOOGLE_API = import.meta.env.VITE_SIGN_IN_WITH_GOOGLE_API;
