@@ -18,6 +18,8 @@ import {
   AutoAwesome,
   CheckCircle,
 } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import paths from "@/routes/paths";
 
 interface LandingProps {
   // onGetStarted: () => void;
@@ -59,6 +61,8 @@ const LandingPage: React.FC<LandingProps> = ({}) => {
   ];
 
   const companies = ["Netflix", "Spotify", "Airbnb", "Uber", "Stripe"];
+
+  const navigate = useNavigate();
 
   return (
     <Box
@@ -127,6 +131,7 @@ const LandingPage: React.FC<LandingProps> = ({}) => {
             </Stack>
             <Button
               variant="outlined"
+              onClick={() => navigate(paths.sign_in)}
               sx={{
                 textTransform: "none",
                 borderColor: "#27272a",

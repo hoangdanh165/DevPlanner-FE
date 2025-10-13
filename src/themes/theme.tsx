@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { ThemeOptions } from "@mui/material/styles";
 
@@ -58,7 +58,21 @@ export const useThemeContext = () => {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isLight, setIsLight] = useState(true);
+  const getInitialTheme = (): boolean => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("themeMode");
+      if (stored === "dark") return false;
+      if (stored === "light") return true;
+    }
+    return true;
+  };
+
+  const [isLight, setIsLight] = useState<boolean>(getInitialTheme);
+
+  useEffect(() => {
+    localStorage.setItem("themeMode", isLight ? "light" : "dark");
+  }, [isLight]);
+
   const theme = isLight ? lightTheme : darkTheme;
   const toggleTheme = () => setIsLight((prev) => !prev);
   return (

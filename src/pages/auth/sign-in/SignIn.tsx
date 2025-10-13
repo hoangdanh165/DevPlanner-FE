@@ -1,9 +1,8 @@
-"use client";
-
 import type React from "react";
 
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Link, Paper } from "@mui/material";
+import paths from "@/routes/paths";
 
 function SignIn() {
   const [email, setEmail] = useState("");
@@ -120,7 +119,7 @@ function SignIn() {
 
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
               <Link
-                href="#"
+                href={paths.forgot_password}
                 underline="hover"
                 sx={{
                   fontSize: "0.875rem",
@@ -155,7 +154,7 @@ function SignIn() {
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             Don't have an account?{" "}
             <Link
-              href="#"
+              href={paths.sign_up}
               underline="hover"
               sx={{
                 color: "primary.main",
