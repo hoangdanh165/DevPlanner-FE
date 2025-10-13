@@ -64,9 +64,9 @@ const routes = [
           {
             path: paths.main,
             element: (
-              // <PrivateRoute allowedRoles={["user"]}>
-              <HomePage />
-              // </PrivateRoute>
+              <PrivateRoute allowedRoles={["user"]}>
+                <HomePage />
+              </PrivateRoute>
             ),
           },
         ],

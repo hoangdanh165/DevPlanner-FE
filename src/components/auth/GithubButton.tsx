@@ -13,8 +13,6 @@ const SIGN_IN_WITH_GITHUB_API = import.meta.env
 // ==========================
 interface GithubButtonProps {
   buttonText?: string;
-  setErrMsg: (msg: string) => void;
-  setSnackbarOpen: (open: boolean) => void;
 }
 
 interface SignInResponse {
@@ -29,8 +27,6 @@ interface SignInResponse {
 
 const GithubButton: React.FC<GithubButtonProps> = ({
   buttonText = "Sign in with GitHub",
-  setErrMsg,
-  setSnackbarOpen,
 }) => {
   const { setAuth } = useAuth();
   const navigate = useNavigate();
@@ -41,8 +37,6 @@ const GithubButton: React.FC<GithubButtonProps> = ({
       window.location.href = import.meta.env.VITE_GITHUB_AUTH_URL as string;
     } catch (error) {
       console.error(error);
-      setErrMsg(`${buttonText} failed!`);
-      setSnackbarOpen(true);
     }
   };
 

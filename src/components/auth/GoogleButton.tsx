@@ -14,8 +14,6 @@ const SIGN_IN_WITH_GOOGLE_API = import.meta.env
 // ==========================
 interface GoogleButtonProps {
   buttonText?: string;
-  setErrMsg: (msg: string) => void;
-  setSnackbarOpen: (open: boolean) => void;
 }
 
 interface SignInResponse {
@@ -30,8 +28,6 @@ interface SignInResponse {
 
 const GoogleButton: React.FC<GoogleButtonProps> = ({
   buttonText = "Sign in with Google",
-  setErrMsg,
-  setSnackbarOpen,
 }) => {
   const { setAuth } = useAuth();
   const navigate = useNavigate();
@@ -62,13 +58,10 @@ const GoogleButton: React.FC<GoogleButtonProps> = ({
         navigate("/");
       } catch (error) {
         console.error(error);
-        setErrMsg(`${buttonText} failed!`);
-        setSnackbarOpen(true);
       }
     },
-    onError: () => {
-      setErrMsg(`${buttonText} failed!`);
-      setSnackbarOpen(true);
+    onError: (err) => {
+      console.error(err);
     },
   });
 

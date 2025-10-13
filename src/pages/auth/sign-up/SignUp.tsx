@@ -12,25 +12,38 @@ import {
 } from "@mui/material";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
-
+import { MuiTelInput } from "mui-tel-input";
 import GoogleButton from "@/components/auth/GoogleButton";
 import GithubButton from "@/components/auth/GithubButton";
 import paths from "@/routes/paths";
 import { useThemeContext } from "@/themes/theme";
+import { useNavigate } from "react-router-dom";
+import axios from "@/services/axios";
+import { useToast } from "@/contexts/ToastProvider";
 
-const SIGN_UP_ENDPOINT = "/api/v1/users/sign-up";
+const SIGN_UP_ENDPOINT = "/api/v1/users/sign-up/";
 
 function SignUp() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
-  const [errMsg, setErrMsg] = useState("");
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const handlePhoneChange = (newValue: string) => {
+    setPhone(newValue);
+  };
 
-  const [errors, setErrors] = useState({ passwordMismatch: false });
+  const [errors, setErrors] = useState({
+    passwordMismatch: false,
+    invalidEmailFormat: false,
+    passwordNotLongEnough: false,
+  });
 
   const { toggleTheme, isLight } = useThemeContext();
 
@@ -38,22 +51,61 @@ function SignUp() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const validateInputs = () => {
+    const newErrors = {
+      invalidEmailFormat: !/\S+@\S+\.\S+/.test(formData.email),
+      passwordNotLongEnough: formData.password.length < 8,
+      passwordMismatch: formData.password !== formData.confirmPassword,
+    };
+
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).includes(true);
+  };
+
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!validateInputs()) return;
 
-    if (formData.password !== formData.confirmPassword) {
-      setErrors({ passwordMismatch: true });
-      return;
+    const form = new FormData(e.currentTarget);
+    const payload = {
+      full_name: String(form.get("name") || "").trim(),
+      phone,
+      address: String(form.get("address") || "").trim(),
+      email: String(form.get("email") || "").trim(),
+      password: form.get("password"),
+    };
+
+    try {
+      const response = await axios.post(SIGN_UP_ENDPOINT, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      showToast(response.data.message || "Sign up successful!", "success");
+      handleCleanForm();
+      navigate(paths.sign_in);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      let message = "Sign up failed!";
+
+      if (!error?.response) {
+        message = "No response from server!";
+      } else if (status === 400) {
+        message = "User with this email already exists!";
+      }
+
+      showToast(message, "error");
     }
-
-    console.log("Sign up with:", formData.email, formData.password);
   };
 
   const handleCleanForm = () => {
-    setFormData({ email: "", password: "", confirmPassword: "" });
-    setErrors({ passwordMismatch: false });
-    setErrMsg("");
-    setSnackbarOpen(false);
+    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+    setErrors({
+      passwordMismatch: false,
+      invalidEmailFormat: false,
+      passwordNotLongEnough: false,
+    });
+    setPhone("");
   };
 
   return (
@@ -116,6 +168,56 @@ function SignUp() {
 
         <form onSubmit={handleSignUp}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ mb: 0.75, fontWeight: 500, color: "text.primary" }}
+              >
+                Full Name
+              </Typography>
+              <TextField
+                fullWidth
+                type="text"
+                name="name"
+                placeholder="How can we call you?"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: "background.default",
+                    "& fieldset": { borderColor: "divider" },
+                    "&:hover fieldset": { borderColor: "text.secondary" },
+                    "&.Mui-focused fieldset": { borderColor: "primary.main" },
+                  },
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ mb: 0.75, fontWeight: 500, color: "text.primary" }}
+              >
+                Phone
+              </Typography>
+              <MuiTelInput
+                fullWidth
+                name="phone"
+                placeholder="A way to recover your password"
+                value={phone}
+                onChange={handlePhoneChange}
+                required
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: "background.default",
+                    "& fieldset": { borderColor: "divider" },
+                    "&:hover fieldset": { borderColor: "text.secondary" },
+                    "&.Mui-focused fieldset": { borderColor: "primary.main" },
+                  },
+                }}
+              />
+            </Box>
             {/* Email */}
             <Box>
               <Typography
@@ -132,6 +234,9 @@ function SignUp() {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                helperText={
+                  errors.invalidEmailFormat ? "Invalid email format." : ""
+                }
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     bgcolor: "background.default",
@@ -154,11 +259,16 @@ function SignUp() {
               <TextField
                 fullWidth
                 type="password"
-                placeholder="••••••••"
+                placeholder="Make it secret!"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
+                helperText={
+                  errors.passwordNotLongEnough
+                    ? "Password must have at least 8 characters."
+                    : ""
+                }
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     bgcolor: "background.default",
@@ -180,7 +290,7 @@ function SignUp() {
                 fullWidth
                 type="password"
                 name="confirmPassword"
-                placeholder="••••••••"
+                placeholder="Make sure it matches!"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
@@ -219,17 +329,9 @@ function SignUp() {
             <Divider sx={{ my: 1.5 }}>or</Divider>
 
             {/* Nút social login */}
-            <GoogleButton
-              buttonText="Sign up with Google"
-              setErrMsg={setErrMsg}
-              setSnackbarOpen={setSnackbarOpen}
-            />
+            <GoogleButton buttonText="Sign up with Google" />
 
-            <GithubButton
-              buttonText="Sign up with GitHub"
-              setErrMsg={setErrMsg}
-              setSnackbarOpen={setSnackbarOpen}
-            />
+            <GithubButton buttonText="Sign up with GitHub" />
           </Box>
         </form>
 
