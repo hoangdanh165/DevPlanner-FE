@@ -1,18 +1,20 @@
 import useAuth from "./useAuth";
 import useAxiosPrivate from "./useAxiosPrivate";
 
-const useLogout = () => {
+const SIGN_OUT_ENDPOINT = "/api/v1/users/sign-out/";
+
+const useSignOut = () => {
   const axiosPrivate = useAxiosPrivate();
   const { setAuth } = useAuth();
 
-  const logout = async () => {
+  const signOut = async () => {
     localStorage.removeItem("persist");
     localStorage.removeItem("isSignedIn");
     setAuth(null);
 
     try {
       axiosPrivate.post(
-        "/api/v1/users/log-out/",
+        SIGN_OUT_ENDPOINT,
         {},
         {
           withCredentials: true,
@@ -23,7 +25,7 @@ const useLogout = () => {
     }
   };
 
-  return logout;
+  return signOut;
 };
 
-export default useLogout;
+export default useSignOut;

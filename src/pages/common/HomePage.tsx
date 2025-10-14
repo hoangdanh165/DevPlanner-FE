@@ -13,7 +13,7 @@ import {
   Paper,
 } from "@mui/material";
 import {
-  Settings,
+  // Settings,
   Description,
   Refresh,
   AutoAwesome,
@@ -23,8 +23,11 @@ import SaveIcon from "@mui/icons-material/Save";
 import GetAppIcon from "@mui/icons-material/GetApp";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import UserMenu from "@/components/common/UserMenu";
+import useAuth from "@/hooks/useAuth";
 
 export default function HomePage() {
+  const { auth } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [projectInput, setProjectInput] = useState(
     "AI-powered fitness tracker"
@@ -148,7 +151,7 @@ export default function HomePage() {
               >
                 {isLight ? <Brightness4Icon /> : <Brightness7Icon />}
               </Button> */}
-              <IconButton
+              {/* <IconButton
                 sx={{
                   color: "#a855f7",
                   "&:hover": {
@@ -158,22 +161,26 @@ export default function HomePage() {
                 }}
               >
                 <Settings />
-              </IconButton>
-              <Button
-                variant="outlined"
-                sx={{
-                  borderColor: "rgba(168, 85, 247, 0.5)",
-                  color: "white",
-                  px: 3,
-                  "&:hover": {
-                    borderColor: "#a855f7",
-                    background: "rgba(168, 85, 247, 0.1)",
-                    boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                  },
-                }}
-              >
-                LOGIN
-              </Button>
+              </IconButton> */}
+              {auth ? (
+                <UserMenu user={auth} />
+              ) : (
+                <Button
+                  variant="outlined"
+                  sx={{
+                    borderColor: "rgba(168, 85, 247, 0.5)",
+                    color: "white",
+                    px: 3,
+                    "&:hover": {
+                      borderColor: "#a855f7",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
+                    },
+                  }}
+                >
+                  SIGN IN
+                </Button>
+              )}
             </Box>
           </Box>
         </Container>
@@ -223,6 +230,28 @@ export default function HomePage() {
                   },
                   "&.Mui-focused fieldset": {
                     borderColor: "#a855f7",
+                  },
+                },
+                "& input": {
+                  color: "white",
+                  // truncate placeholder and entered text with ellipsis
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  "&::placeholder": {
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  },
+                },
+                "& .MuiOutlinedInput-input": {
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  "&::placeholder": {
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
                   },
                 },
               }}

@@ -1,9 +1,7 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import {
   CssBaseline,
-  Experimental_CssVarsProvider as CssVarsProvider,
   ThemeProvider as MuiThemeProvider,
   createTheme,
 } from "@mui/material";

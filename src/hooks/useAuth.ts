@@ -4,12 +4,12 @@ import AuthContext from "@/contexts/AuthProvider";
 export interface AuthData {
   role: string;
   accessToken: string;
-  avatar?: string;
-  status?: number;
-  fullName?: string;
-  email?: string;
+  avatar: string | null;
+  status: number;
+  fullName: string | null;
+  email: string;
   address?: string;
-  phone?: string;
+  phone: string | null;
   userId: string;
 }
 

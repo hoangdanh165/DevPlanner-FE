@@ -1,17 +1,105 @@
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, TextField, Button, Typography, Link, Paper } from "@mui/material";
 import paths from "@/routes/paths";
+import axios from "@/services/axios";
+import useAuth from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/contexts/ToastProvider";
+
+const SIGN_IN_API = "/api/v1/users/sign-in/";
 
 function SignIn() {
-  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
+  const { showToast } = useToast();
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Sign in with:", email, password);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({
+    invalidEmailFormat: false,
+  });
+  const { setAuth, persist } = useAuth();
+
+  const validateInputs = () => {
+    const newErrors = {
+      invalidEmailFormat: !/\S+@\S+\.\S+/.test(formData.email),
+    };
+
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).includes(true);
   };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!validateInputs()) {
+      return;
+    }
+    setLoading(true);
+    const data = new FormData(e.currentTarget);
+    let email, password;
+    email = data.get("email");
+    password = data.get("password");
+
+    try {
+      const response = await axios.post(
+        SIGN_IN_API,
+        JSON.stringify({ email, password }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      localStorage.setItem("isSignedIn", "true");
+      const accessToken = response?.data?.accessToken;
+      const role = response?.data?.role;
+      const status = response?.data?.status;
+      const avatar = response?.data?.avatar;
+      const fullName = response?.data?.fullName;
+      const address = response?.data?.address;
+      const phone = response?.data?.phone;
+      const userId = response?.data?.userId;
+
+      setAuth({
+        userId,
+        email,
+        role,
+        status,
+        accessToken,
+        avatar,
+        fullName,
+        address,
+        phone,
+      });
+
+      navigate(paths.main);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      let message = "Sign in failed!";
+
+      if (!error?.response) {
+        message = "No response from server!";
+      }
+
+      showToast(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem("persist", persist);
+  }, [persist]);
 
   return (
     <Box
@@ -65,10 +153,14 @@ function SignIn() {
               <TextField
                 fullWidth
                 type="email"
+                name="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleChange}
                 required
+                helperText={
+                  errors.invalidEmailFormat ? "Invalid email format." : ""
+                }
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     bgcolor: "background.default",
@@ -96,9 +188,10 @@ function SignIn() {
               <TextField
                 fullWidth
                 type="password"
+                name="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handleChange}
                 required
                 sx={{
                   "& .MuiOutlinedInput-root": {

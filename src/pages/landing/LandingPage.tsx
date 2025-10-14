@@ -28,6 +28,10 @@ import {
   ArrowForward,
   TrendingUp,
 } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import paths from "@/routes/paths";
+import useAuth from "@/hooks/useAuth";
+import UserMenu from "@/components/common/UserMenu";
 
 const darkTheme = createTheme({
   palette: {
@@ -57,9 +61,12 @@ const darkTheme = createTheme({
 });
 
 export default function LandingPage() {
+  const { auth } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -185,41 +192,53 @@ export default function LandingPage() {
                 Examples
               </Button>
             </Box>
-            <Button
-              variant="outlined"
-              sx={{
-                display: { xs: "none", sm: "inline-flex" },
-                borderColor: "rgba(255, 255, 255, 0.2)",
-                color: "text.primary",
-                mr: 1.5,
-                fontWeight: 600,
-                "&:hover": {
-                  borderColor: "primary.main",
-                  bgcolor: "rgba(147, 51, 234, 0.1)",
-                },
-              }}
-            >
-              Log in
-            </Button>
-            <Button
-              variant="contained"
-              sx={{
-                display: { xs: "none", sm: "inline-flex" },
-                background: "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
-                color: "white",
-                fontWeight: 600,
-                px: 3,
-                "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 10px 30px rgba(147, 51, 234, 0.4)",
-                },
-                transition: "all 0.3s",
-              }}
-            >
-              Get Started
-            </Button>
+            {auth ? (
+              <UserMenu user={auth} />
+            ) : (
+              <Box>
+                {/* <Button
+                  variant="outlined"
+                  onClick={() => navigate(paths.sign_in)}
+                  sx={{
+                    display: { xs: "none", sm: "inline-flex" },
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    color: "text.primary",
+                    mr: 1.5,
+                    fontWeight: 600,
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      bgcolor: "rgba(147, 51, 234, 0.1)",
+                    },
+                  }}
+                >
+                  Sign in
+                </Button> */}
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    navigate(paths.sign_up);
+                  }}
+                  sx={{
+                    display: { xs: "none", sm: "inline-flex" },
+                    background:
+                      "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
+                    color: "white",
+                    fontWeight: 600,
+                    px: 3,
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 10px 30px rgba(147, 51, 234, 0.4)",
+                    },
+                    transition: "all 0.3s",
+                  }}
+                >
+                  Get Started
+                </Button>
+              </Box>
+            )}
+
             <IconButton
               sx={{
                 display: { xs: "flex", md: "none" },
@@ -508,6 +527,26 @@ export default function LandingPage() {
                       color: "white",
                       py: 2.5,
                       fontSize: "1.05rem",
+                      // ensure long placeholder/contents truncate with ellipsis
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      "&::placeholder": {
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      },
+                    },
+                    // Target the MUI input class as well for robustness
+                    "& .MuiOutlinedInput-input": {
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      "&::placeholder": {
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      },
                     },
                   }}
                 />
