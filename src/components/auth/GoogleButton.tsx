@@ -5,18 +5,16 @@ import { Button } from "@mui/material";
 import { GoogleIcon } from "./CustomIcons";
 import useAuth from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import paths from "@/routes/paths";
 
 const SIGN_IN_WITH_GOOGLE_API = import.meta.env
   .VITE_SIGN_IN_WITH_GOOGLE_API as string;
 
-// ==========================
-// 🔹 Types
-// ==========================
 interface GoogleButtonProps {
   buttonText?: string;
 }
 
-interface SignInResponse {
+export interface SignInResponse {
   accessToken: string;
   role: string;
   status: number;
@@ -55,7 +53,7 @@ const GoogleButton: React.FC<GoogleButtonProps> = ({
           userId,
         });
 
-        navigate("/");
+        navigate(paths.main);
       } catch (error) {
         console.error(error);
       }

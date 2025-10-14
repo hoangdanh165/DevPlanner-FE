@@ -27,6 +27,7 @@ import PrivateRoute from "@/components/utils/PrivateRoute";
 import IsSignedIn from "@/components/utils/IsSignedIn";
 import PageLoader from "@/components/utils/PageLoader";
 import Splash from "@/components/utils/Splash";
+import GithubCallback from "@/pages/auth/github/GithubCallback";
 const PersistSignin = lazy(() => import("../components/utils/PersistSignin"));
 
 const createMainLayoutRoutes = () => (
@@ -98,6 +99,14 @@ const routes = [
             element: (
               <IsSignedIn>
                 <SignUp />
+              </IsSignedIn>
+            ),
+          },
+          {
+            path: paths.github_callback,
+            element: (
+              <IsSignedIn>
+                <GithubCallback />
               </IsSignedIn>
             ),
           },

@@ -11,6 +11,7 @@ export default {
   sign_in: `${rootPaths.authRoot}/sign-in`,
   sign_up: `${rootPaths.authRoot}/sign-up`,
   forgot_password: `${rootPaths.authRoot}/forgot-password`,
+  github_callback: `${rootPaths.authRoot}/github/callback`,
 
   // Main paths
   main: `${rootPaths.root}/dev-planner`,
@@ -23,5 +24,4 @@ export default {
   unauthorized: `/unauthorized`,
   forbidden: `/forbidden`,
   banned: `/banned`,
-  not_for_customer: `/not-for-customer`,
 };

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Box, TextField, Button, Typography, Link, Paper } from "@mui/material";
 import paths from "@/routes/paths";
 import axios from "@/services/axios";
-import useAuth from "@/hooks/useAuth";
+import useAuth, { type AuthData } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/contexts/ToastProvider";
 
@@ -52,35 +52,15 @@ function SignIn() {
     password = data.get("password");
 
     try {
-      const response = await axios.post(
+      const { data } = await axios.post<AuthData>(
         SIGN_IN_API,
         JSON.stringify({ email, password }),
         {
           headers: { "Content-Type": "application/json" },
         }
       );
-
+      setAuth(data);
       localStorage.setItem("isSignedIn", "true");
-      const accessToken = response?.data?.accessToken;
-      const role = response?.data?.role;
-      const status = response?.data?.status;
-      const avatar = response?.data?.avatar;
-      const fullName = response?.data?.fullName;
-      const address = response?.data?.address;
-      const phone = response?.data?.phone;
-      const userId = response?.data?.userId;
-
-      setAuth({
-        userId,
-        email,
-        role,
-        status,
-        accessToken,
-        avatar,
-        fullName,
-        address,
-        phone,
-      });
 
       navigate(paths.main);
     } catch (error: any) {
@@ -190,7 +170,7 @@ function SignIn() {
                 type="password"
                 name="password"
                 placeholder="••••••••"
-                value={password}
+                value={formData.password}
                 onChange={handleChange}
                 required
                 sx={{
