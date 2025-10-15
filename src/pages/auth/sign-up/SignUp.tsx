@@ -328,9 +328,6 @@ function SignUp() {
             {/* Separator */}
             <Divider sx={{ my: 1.5 }}>or</Divider>
 
-            {/* Nút social login */}
-            <GoogleButton buttonText="Sign up with Google" />
-
             <GithubButton buttonText="Sign up with GitHub" />
           </Box>
         </form>

@@ -1,12 +1,21 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
-import { Box, TextField, Button, Typography, Link, Paper } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Link,
+  Paper,
+  Divider,
+} from "@mui/material";
 import paths from "@/routes/paths";
 import axios from "@/services/axios";
 import useAuth, { type AuthData } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/contexts/ToastProvider";
+import GithubButton from "@/components/auth/GithubButton";
 
 const SIGN_IN_API = "/api/v1/users/sign-in/";
 
@@ -220,6 +229,10 @@ function SignIn() {
             >
               Sign in
             </Button>
+
+            <Divider sx={{ my: 1.5 }}>or</Divider>
+
+            <GithubButton />
           </Box>
         </form>
 

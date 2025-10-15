@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -12,29 +14,23 @@ import {
   Collapse,
 } from "@mui/material";
 import {
-  // Settings,
+  Settings,
   Description,
   Refresh,
-  AutoAwesome,
   Psychology,
 } from "@mui/icons-material";
-import { useThemeContext } from "@/themes/theme";
-import SaveIcon from "@mui/icons-material/Save";
-import GetAppIcon from "@mui/icons-material/GetApp";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
-import UserMenu from "@/components/common/UserMenu";
-import useAuth from "@/hooks/useAuth";
+import UserMenu from "./user-menu";
 
-export default function HomePage() {
-  const { auth } = useAuth();
+export default function DeveloperPlanner() {
   const [activeTab, setActiveTab] = useState(0);
   const [projectInput, setProjectInput] = useState(
     "AI-powered fitness tracker"
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentThoughtIndex, setCurrentThoughtIndex] = useState(-1);
-  const [aiThoughts, setAiThoughts] = useState<string[]>([]);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [currentThought, setCurrentThought] = useState("");
+  const [wsConnected, setWsConnected] = useState(false);
 
   const thoughts = [
     "Analyzing project requirements...",
@@ -47,6 +43,82 @@ export default function HomePage() {
     "Creating comprehensive project overview...",
   ];
 
+  // WebSocket state
+  // Initialize WebSocket connection
+  const connectWebSocket = () => {
+    // Replace with your actual WebSocket URL
+    const websocket = new WebSocket("ws://your-backend-url/ai-thoughts");
+
+    websocket.onopen = () => {
+      console.log("[v0] WebSocket connected");
+      setWsConnected(true);
+      setWs(websocket);
+    };
+
+    websocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // Assuming the WebSocket sends messages in format: { thought: "..." }
+        if (data.thought) {
+          setCurrentThought(data.thought);
+        }
+
+        // Handle completion message
+        if (data.status === "complete") {
+          setIsGenerating(false);
+        }
+      } catch (error) {
+        console.error("[v0] Error parsing WebSocket message:", error);
+      }
+    };
+
+    websocket.onerror = (error) => {
+      console.error("[v0] WebSocket error:", error);
+      setWsConnected(false);
+    };
+
+    websocket.onclose = () => {
+      console.log("[v0] WebSocket disconnected");
+      setWsConnected(false);
+      setWs(null);
+    };
+
+    return websocket;
+  };
+
+  // Handle generate with WebSocket
+  const handleGenerateWithWebSocket = () => {
+    setIsGenerating(true);
+    setCurrentThought("");
+
+    // Connect to WebSocket if not already connected
+    let websocket = ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      websocket = connectWebSocket();
+    }
+
+    // Send project input to backend to start generation
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      websocket.send(
+        JSON.stringify({
+          action: "generate",
+          project: projectInput,
+        })
+      );
+    }
+  };
+
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [ws]);
+
+  // Current implementation using simulated thoughts
   const handleGenerate = async () => {
     setIsGenerating(true);
     setCurrentThoughtIndex(-1);
@@ -59,8 +131,6 @@ export default function HomePage() {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setIsGenerating(false);
   };
-
-  const { toggleTheme, isLight } = useThemeContext();
 
   return (
     <Box
@@ -159,26 +229,6 @@ export default function HomePage() {
             {/* Actions */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <IconButton
-                onClick={toggleTheme}
-                sx={{
-                  color: "#a855f7",
-                  "&:hover": {
-                    background: "rgba(168, 85, 247, 0.1)",
-                    boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                  },
-                }}
-              >
-                {isLight ? <Brightness4Icon /> : <Brightness7Icon />}
-              </IconButton>
-              {/* <Button
-                variant="contained"
-                color="primary"
-                onClick={toggleTheme}
-                sx={{ minWidth: 0, padding: 1, borderRadius: "50%", mr: 2 }}
-              >
-                {isLight ? <Brightness4Icon /> : <Brightness7Icon />}
-              </Button> */}
-              {/* <IconButton
                 sx={{
                   color: "#a855f7",
                   "&:hover": {
@@ -188,26 +238,8 @@ export default function HomePage() {
                 }}
               >
                 <Settings />
-              </IconButton> */}
-              {auth ? (
-                <UserMenu user={auth} />
-              ) : (
-                <Button
-                  variant="outlined"
-                  sx={{
-                    borderColor: "rgba(168, 85, 247, 0.5)",
-                    color: "white",
-                    px: 3,
-                    "&:hover": {
-                      borderColor: "#a855f7",
-                      background: "rgba(168, 85, 247, 0.1)",
-                      boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                    },
-                  }}
-                >
-                  SIGN IN
-                </Button>
-              )}
+              </IconButton>
+              <UserMenu userName="Sarah Chen" userEmail="sarah@developer.com" />
             </Box>
           </Box>
         </Container>
@@ -260,143 +292,161 @@ export default function HomePage() {
                     borderColor: "#a855f7",
                   },
                 },
-                "& input": {
-                  color: "white",
-                  // truncate placeholder and entered text with ellipsis
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
-                },
-                "& .MuiOutlinedInput-input": {
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
-                },
               }}
             />
             <Button
               variant="contained"
-              onClick={handleGenerate}
-              size="medium"
-              endIcon={<AutoAwesome />}
+              onClick={handleGenerateWithWebSocket}
               disabled={isGenerating}
               sx={{
-                background: "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
-                color: "white",
-                px: 3,
-                py: 1,
-                fontWeight: 700,
-                textTransform: "none",
+                px: 4,
+                background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+                boxShadow: "0 4px 20px rgba(168, 85, 247, 0.4)",
                 "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
+                  boxShadow: "0 6px 30px rgba(168, 85, 247, 0.6)",
+                  transform: "translateY(-2px)",
                 },
+                "&:disabled": {
+                  background: "rgba(168, 85, 247, 0.3)",
+                  color: "rgba(255, 255, 255, 0.5)",
+                },
+                transition: "all 0.3s ease",
               }}
             >
-              {isGenerating ? "Generating..." : "Generate"}
+              {isGenerating ? "Generating..." : "Generate ▶"}
             </Button>
           </Box>
-          <Collapse in={isGenerating}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1,
-                mb: 0,
-                mt: 2,
-                background: "rgba(168, 85, 247, 0.05)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(168, 85, 247, 0.2)",
-                borderRadius: 1,
-                boxShadow: "0 8px 32px rgba(168, 85, 247, 0.2)",
-                // maxWidth: "600px",
-                fullWidth: true,
-                mx: "auto",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    background:
-                      "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                    borderRadius: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    animation: "pulse 2s ease-in-out infinite",
-                    "@keyframes pulse": {
-                      "0%, 100%": {
-                        boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
-                        transform: "scale(1)",
-                      },
-                      "50%": {
-                        boxShadow: "0 0 40px rgba(168, 85, 247, 0.8)",
-                        transform: "scale(1.05)",
-                      },
-                    },
-                  }}
-                >
-                  <Psychology sx={{ color: "white", fontSize: 20 }} />
-                </Box>
-                <Box
-                  sx={{
-                    flex: 1,
-                    position: "relative",
-                    minHeight: "24px",
-                  }}
-                >
-                  {currentThoughtIndex >= 0 && (
-                    <Typography
-                      key={currentThoughtIndex}
-                      sx={{
-                        color: "rgba(255, 255, 255, 0.9)",
-                        fontSize: "0.95rem",
-                        fontWeight: "bold",
-                        animation: "fadeInOut 1.2s ease-in-out",
-                        "@keyframes fadeInOut": {
-                          "0%": {
-                            opacity: 0,
-                            filter: "blur(4px)",
-                            transform: "translateY(10px)",
-                          },
-                          "20%": {
-                            opacity: 1,
-                            filter: "blur(0px)",
-                            transform: "translateY(0)",
-                          },
-                          "80%": {
-                            opacity: 1,
-                            filter: "blur(0px)",
-                            transform: "translateY(0)",
-                          },
-                          "100%": {
-                            opacity: 0,
-                            filter: "blur(4px)",
-                            transform: "translateY(-10px)",
-                          },
-                        },
-                      }}
-                    >
-                      {thoughts[currentThoughtIndex]}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
-          </Collapse>
         </Paper>
+
+        {/* Thinking Section */}
+        <Collapse in={isGenerating}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 4,
+              background: "rgba(168, 85, 247, 0.05)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(168, 85, 247, 0.2)",
+              borderRadius: 3,
+              boxShadow: "0 8px 32px rgba(168, 85, 247, 0.2)",
+              maxWidth: "600px",
+              mx: "auto",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  background:
+                    "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+                  borderRadius: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  animation: "pulse 2s ease-in-out infinite",
+                  "@keyframes pulse": {
+                    "0%, 100%": {
+                      boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
+                      transform: "scale(1)",
+                    },
+                    "50%": {
+                      boxShadow: "0 0 40px rgba(168, 85, 247, 0.8)",
+                      transform: "scale(1.05)",
+                    },
+                  },
+                }}
+              >
+                <Psychology sx={{ color: "white", fontSize: 20 }} />
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  position: "relative",
+                  minHeight: "24px",
+                }}
+              >
+                {/* For simulated mode: use currentThoughtIndex */}
+                {currentThoughtIndex >= 0 && (
+                  <Typography
+                    key={currentThoughtIndex}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.9)",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                      animation: "fadeInOut 1.2s ease-in-out",
+                      "@keyframes fadeInOut": {
+                        "0%": {
+                          opacity: 0,
+                          filter: "blur(4px)",
+                          transform: "translateY(10px)",
+                        },
+                        "20%": {
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          transform: "translateY(0)",
+                        },
+                        "80%": {
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          transform: "translateY(0)",
+                        },
+                        "100%": {
+                          opacity: 0,
+                          filter: "blur(4px)",
+                          transform: "translateY(-10px)",
+                        },
+                      },
+                    }}
+                  >
+                    {thoughts[currentThoughtIndex]}
+                  </Typography>
+                )}
+
+                {/* For WebSocket mode: uncomment this and comment out the above block */}
+                {/*
+                {currentThought && (
+                  <Typography
+                    key={currentThought}
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.9)",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                      animation: "fadeInOut 1.2s ease-in-out",
+                      "@keyframes fadeInOut": {
+                        "0%": {
+                          opacity: 0,
+                          filter: "blur(4px)",
+                          transform: "translateY(10px)",
+                        },
+                        "20%": {
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          transform: "translateY(0)",
+                        },
+                        "80%": {
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          transform: "translateY(0)",
+                        },
+                        "100%": {
+                          opacity: 0,
+                          filter: "blur(4px)",
+                          transform: "translateY(-10px)",
+                        },
+                      },
+                    }}
+                  >
+                    {currentThought}
+                  </Typography>
+                )}
+                */}
+              </Box>
+            </Box>
+          </Paper>
+        </Collapse>
 
         {/* Tabs Section */}
         <Paper
@@ -438,7 +488,6 @@ export default function HomePage() {
             <Tab label="Docs" />
           </Tabs>
 
-          {/* Tab Content */}
           <Box sx={{ p: 4 }}>
             {activeTab === 0 && (
               <Box>
@@ -474,6 +523,8 @@ export default function HomePage() {
                   </Box>
                   <Button
                     startIcon={<Refresh />}
+                    onClick={handleGenerateWithWebSocket}
+                    disabled={isGenerating}
                     sx={{
                       color: "#a855f7",
                       borderColor: "rgba(168, 85, 247, 0.3)",
@@ -481,6 +532,10 @@ export default function HomePage() {
                       "&:hover": {
                         borderColor: "#a855f7",
                         background: "rgba(168, 85, 247, 0.1)",
+                      },
+                      "&:disabled": {
+                        color: "rgba(168, 85, 247, 0.5)",
+                        borderColor: "rgba(168, 85, 247, 0.2)",
                       },
                     }}
                   >
@@ -502,25 +557,8 @@ export default function HomePage() {
                   health objectives.
                 </Typography>
 
-                <Box
-                  sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}
-                >
+                <Box sx={{ display: "flex", gap: 2 }}>
                   <Button
-                    startIcon={<GetAppIcon />}
-                    variant="outlined"
-                    sx={{
-                      borderColor: "rgba(255, 255, 255, 0.2)",
-                      color: "white",
-                      "&:hover": {
-                        borderColor: "rgba(255, 255, 255, 0.4)",
-                        background: "rgba(255, 255, 255, 0.05)",
-                      },
-                    }}
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    startIcon={<SaveIcon />}
                     variant="contained"
                     sx={{
                       background:
@@ -533,7 +571,20 @@ export default function HomePage() {
                       transition: "all 0.3s ease",
                     }}
                   >
-                    Save Project
+                    💾 Save Project
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    sx={{
+                      borderColor: "rgba(255, 255, 255, 0.2)",
+                      color: "white",
+                      "&:hover": {
+                        borderColor: "rgba(255, 255, 255, 0.4)",
+                        background: "rgba(255, 255, 255, 0.05)",
+                      },
+                    }}
+                  >
+                    ⬇ Export
                   </Button>
                 </Box>
               </Box>
