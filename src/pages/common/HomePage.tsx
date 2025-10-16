@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Box,
   Container,
@@ -25,16 +25,32 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import UserMenu from "@/components/common/UserMenu";
 import useAuth from "@/hooks/useAuth";
+import { useSocketCtx } from "@/contexts/SocketContext";
+import useAxiosPrivate from "@/hooks/useAxiosPrivate";
+import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/contexts/ToastProvider";
+
+const AI_ENDPOINT =
+  import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
 
 export default function HomePage() {
   const { auth } = useAuth();
+  const { showToast } = useToast();
+  const axiosPrivate = useAxiosPrivate();
+
   const [activeTab, setActiveTab] = useState(0);
-  const [projectInput, setProjectInput] = useState(
-    "AI-powered fitness tracker"
-  );
+  const [projectInput, setProjectInput] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentThoughtIndex, setCurrentThoughtIndex] = useState(-1);
-  const [aiThoughts, setAiThoughts] = useState<string[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  const { socket, joinRoom, leaveRoom, onProgress, on } = useSocketCtx();
+
+  const [pubsubMessages, setPubsubMessages] = useState<
+    Array<{ event: string; data: any; ts: number }>
+  >([]);
+  const currentProjectIdRef = useRef<string | null>(null);
 
   const thoughts = [
     "Analyzing project requirements...",
@@ -48,7 +64,55 @@ export default function HomePage() {
   ];
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
+    const projName = projectInput.trim();
+    const projDesc = descriptionInput.trim();
+    const projId = uuidv4();
+    setProjectId(projId);
+
+    // leave previous project room (if any) and join the new one
+    try {
+      if (currentProjectIdRef.current) {
+        leaveRoom(currentProjectIdRef.current);
+      }
+    } catch (e) {}
+    try {
+      joinRoom(projId);
+      currentProjectIdRef.current = projId;
+    } catch (e) {
+      // ignore
+    }
+
+    if (projName.length === 0 || projDesc.length === 0) {
+      showToast("Please provide a project name or idea.", "error");
+      return;
+    }
+
+    try {
+      // mark as generating immediately so UI shows live section
+      setIsGenerating(true);
+
+      await axiosPrivate.post(AI_ENDPOINT, {
+        project_id: projId,
+        project_name: projName,
+        description: projDesc,
+      });
+    } catch (e) {
+      console.warn("AI generation request failed", e);
+      setIsGenerating(false);
+      showToast(
+        "Failed to start plan generation for this project. Please try again.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      joinRoom(projId);
+      console.log("Joined room for project:", projId);
+    } catch (e) {
+      // ignore
+    }
+
     setCurrentThoughtIndex(-1);
 
     for (let i = 0; i < thoughts.length; i++) {
@@ -57,10 +121,63 @@ export default function HomePage() {
     }
 
     await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsGenerating(false);
   };
 
   const { toggleTheme, isLight } = useThemeContext();
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    joinRoom(projectId);
+
+    const off = onProgress((payload) => {
+      console.log("[WebSocket] Received payload:", payload);
+
+      // payload may be sent as JSON string or already-parsed object
+      let p: any = payload;
+      try {
+        if (typeof payload === "string") p = JSON.parse(payload);
+      } catch (err) {
+        // leave p as original
+      }
+
+      // normalize fields we expect from backend: { event, data, ts }
+      const event = p.event || p.type || p.event_name || "unknown";
+      const data = p.data ?? p.payload ?? null;
+      const ts = Number(p.ts) || Date.now() / 1000; // backend ts is seconds
+
+      const normalized = { event, data, ts };
+      console.log(normalized);
+      setPubsubMessages((prev) => [...prev, normalized]);
+
+      // control UI state based on pipeline events
+      if (
+        event === "pipeline_complete" ||
+        event === "pipeline_done" ||
+        event === "completed"
+      ) {
+        setIsGenerating(false);
+        setCurrentThoughtIndex(-1);
+      }
+      if (event === "pipeline_failed" || event === "failed") {
+        setIsGenerating(false);
+        showToast("AI generation failed. Check logs.", "error");
+      }
+      if (
+        event === "pipeline_started" ||
+        event === "queued" ||
+        event === "init"
+      ) {
+        setIsGenerating(true);
+      }
+    });
+
+    // cleanup
+    return () => {
+      off?.();
+      leaveRoom(projectId);
+    };
+  }, [projectId, joinRoom, leaveRoom, onProgress]);
 
   return (
     <Box
@@ -243,7 +360,52 @@ export default function HomePage() {
               fullWidth
               value={projectInput}
               onChange={(e) => setProjectInput(e.target.value)}
-              placeholder="Describe your project idea..."
+              placeholder="Your project idea..."
+              disabled={isGenerating}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  background: "rgba(0, 0, 0, 0.4)",
+                  color: "white",
+                  borderRadius: 2,
+                  "& fieldset": {
+                    borderColor: "rgba(255, 255, 255, 0.1)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(168, 85, 247, 0.5)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#a855f7",
+                  },
+                },
+                "& input": {
+                  color: "white",
+                  // truncate placeholder and entered text with ellipsis
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  "&::placeholder": {
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  },
+                },
+                "& .MuiOutlinedInput-input": {
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  "&::placeholder": {
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  },
+                },
+              }}
+            />
+            <TextField
+              fullWidth
+              value={descriptionInput}
+              onChange={(e) => setDescriptionInput(e.target.value)}
+              placeholder="Describe more your project..."
               disabled={isGenerating}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -319,7 +481,6 @@ export default function HomePage() {
                 borderRadius: 1,
                 boxShadow: "0 8px 32px rgba(168, 85, 247, 0.2)",
                 // maxWidth: "600px",
-                fullWidth: true,
                 mx: "auto",
               }}
             >
@@ -393,6 +554,54 @@ export default function HomePage() {
                     </Typography>
                   )}
                 </Box>
+              </Box>
+            </Paper>
+            {/* Recent pubsub messages */}
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 2,
+                p: 2,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.04)",
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
+              >
+                Live updates
+              </Typography>
+              <Box sx={{ maxHeight: 160, overflow: "auto" }}>
+                {pubsubMessages.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(255,255,255,0.5)" }}
+                  >
+                    No live messages yet
+                  </Typography>
+                ) : (
+                  pubsubMessages.map((m, i) => (
+                    <Typography
+                      key={i}
+                      variant="body2"
+                      sx={{
+                        color: "rgba(255,255,255,0.8)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      [
+                      {new Date(
+                        m.ts > 1e12 ? m.ts : m.ts * 1000
+                      ).toLocaleTimeString()}
+                      ] {m.event}:{" "}
+                      {typeof m.data === "number"
+                        ? m.data
+                        : JSON.stringify(m.data)}
+                    </Typography>
+                  ))
+                )}
               </Box>
             </Paper>
           </Collapse>

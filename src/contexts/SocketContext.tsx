@@ -1,64 +1,81 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import { io, Socket } from "socket.io-client";
-import useAuth from "../hooks/useAuth";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+import type { Socket } from "socket.io-client";
+import { getSocket } from "../libs/socket";
+import type { SocketContextValue } from "@/types/all_types";
 
-const NODE_JS_HOST = import.meta.env.VITE_NODE_JS_HOST as string;
+const SocketContext = createContext<SocketContextValue | undefined>(undefined);
 
-export interface OnlineUser {
-  userId: string;
-  [key: string]: any;
-}
-
-interface SocketContextType {
-  socket: Socket | null;
-  onlineUsers: OnlineUser[];
-}
-
-const SocketContext = createContext<SocketContextType | undefined>(undefined);
-
-export const useSocket = (): SocketContextType => {
-  const context = useContext(SocketContext);
-  if (!context) {
-    throw new Error("useSocket must be used within a SocketContextProvider");
-  }
-  return context;
-};
-
-interface SocketContextProviderProps {
-  children: ReactNode;
-}
-
-export const SocketContextProvider: React.FC<SocketContextProviderProps> = ({
+export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { auth } = useAuth();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const socketRef = useRef<Socket | null>(null);
+  const joined = useRef<Set<string>>(new Set()); // đang ở những room nào
 
   useEffect(() => {
-    if (!auth?.userId) return;
-
-    const newSocket = io(NODE_JS_HOST, {
-      query: {
-        userId: auth.userId,
-      },
-    });
-
-    setSocket(newSocket);
-
-    newSocket.on("getOnlineUsers", (users: OnlineUser[]) => {
-      setOnlineUsers(users);
-    });
+    const s = getSocket();
+    socketRef.current = s;
+    const onConnect = () => {
+      joined.current.forEach((id) => s.emit("join", { projectId: id }));
+    };
+    s.on("connect", onConnect);
+    s.connect();
 
     return () => {
-      newSocket.close();
+      s.off("connect", onConnect);
+      joined.current.forEach((id) => s.emit("leave", { projectId: id }));
+      joined.current.clear();
+      if (import.meta.env.PROD || false) s.disconnect();
+      socketRef.current = null;
     };
-  }, [auth?.userId]);
+  }, []);
+
+  const value = useMemo<SocketContextValue>(
+    () => ({
+      socket: socketRef.current,
+      joinRoom: (projectId: string) => {
+        const s = socketRef.current;
+        if (!s) return;
+        if (joined.current.has(projectId)) return;
+        s.emit("join", { projectId });
+        joined.current.add(projectId);
+      },
+      leaveRoom: (projectId: string) => {
+        const s = socketRef.current;
+        if (!s) return;
+        if (!joined.current.has(projectId)) return;
+        s.emit("leave", { projectId });
+        joined.current.delete(projectId);
+      },
+      onProgress: (handler) => {
+        const s = socketRef.current;
+        if (!s) return () => {};
+        s.on("progress", handler);
+        return () => s.off("progress", handler);
+      },
+      on: (event: string, handler: (payload: any) => void) => {
+        const s = socketRef.current;
+        if (!s) return () => {};
+        s.on(event, handler);
+        return () => s.off(event, handler);
+      },
+    }),
+    []
+  );
 
   return (
-    <SocketContext.Provider value={{ socket, onlineUsers }}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
   );
 };
+
+export function useSocketCtx(): SocketContextValue {
+  const ctx = useContext(SocketContext);
+  if (!ctx)
+    throw new Error("useSocketCtx must be used within <SocketProvider>");
+  return ctx;
+}

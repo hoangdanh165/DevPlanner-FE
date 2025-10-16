@@ -13,7 +13,6 @@ import {
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { MuiTelInput } from "mui-tel-input";
-import GoogleButton from "@/components/auth/GoogleButton";
 import GithubButton from "@/components/auth/GithubButton";
 import paths from "@/routes/paths";
 import { useThemeContext } from "@/themes/theme";

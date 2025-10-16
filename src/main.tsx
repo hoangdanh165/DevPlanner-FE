@@ -10,7 +10,7 @@ import "./index.css";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { RecoilRoot } from "recoil";
-import { SocketContextProvider } from "@/contexts/SocketContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 import { ThemeProvider, useThemeContext } from "@/themes/theme";
 import { ToastProvider } from "@/contexts/ToastProvider";
 
@@ -26,11 +26,11 @@ function AppWithTheme() {
         {/* <CssVarsProvider> */}
         <CssBaseline />
         <AuthProvider>
-          <SocketContextProvider>
+          <SocketProvider>
             {/* <LocalizationProvider dateAdapter={AdapterDayjs}> */}
             <RouterProvider router={router} />
             {/* </LocalizationProvider> */}
-          </SocketContextProvider>
+          </SocketProvider>
         </AuthProvider>
         {/* </CssVarsProvider> */}
       </ToastProvider>
