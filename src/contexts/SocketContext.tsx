@@ -15,7 +15,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const socketRef = useRef<Socket | null>(null);
-  const joined = useRef<Set<string>>(new Set()); // đang ở những room nào
+  const joined = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const s = getSocket();
@@ -57,12 +57,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!s) return () => {};
         s.on("progress", handler);
         return () => s.off("progress", handler);
-      },
-      on: (event: string, handler: (payload: any) => void) => {
-        const s = socketRef.current;
-        if (!s) return () => {};
-        s.on(event, handler);
-        return () => s.off(event, handler);
       },
     }),
     []

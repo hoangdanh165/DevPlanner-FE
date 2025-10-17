@@ -14,13 +14,13 @@ import {
 import {
   // Settings,
   Description,
-  Refresh,
   AutoAwesome,
   Psychology,
+  Computer,
+  ListAlt,
+  Article,
 } from "@mui/icons-material";
 import { useThemeContext } from "@/themes/theme";
-import SaveIcon from "@mui/icons-material/Save";
-import GetAppIcon from "@mui/icons-material/GetApp";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import UserMenu from "@/components/common/UserMenu";
@@ -29,6 +29,10 @@ import { useSocketCtx } from "@/contexts/SocketContext";
 import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/contexts/ToastProvider";
+import { SectionView } from "@/components/common/SectionView";
+import { RenderTasksStructured } from "@/components/common/RenderTasksStructured";
+import RenderFeaturesStructured from "@/components/common/RenderFeaturesStructured";
+import RenderTechStackStructured from "@/components/common/RenderTechStackStructured";
 
 const AI_ENDPOINT =
   import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
@@ -37,60 +41,80 @@ export default function HomePage() {
   const { auth } = useAuth();
   const { showToast } = useToast();
   const axiosPrivate = useAxiosPrivate();
+  const { toggleTheme, isLight } = useThemeContext();
+  const { joinRoom, leaveRoom, onProgress } = useSocketCtx();
 
   const [activeTab, setActiveTab] = useState(0);
   const [projectInput, setProjectInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [currentThoughtIndex, setCurrentThoughtIndex] = useState(-1);
+  const [currentThought, setCurrentThought] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
 
-  const { socket, joinRoom, leaveRoom, onProgress, on } = useSocketCtx();
+  const [sections, setSections] = useState<{
+    overview: string;
+    features: string;
+    techstack: string;
+    tasks: string;
+    docs: string;
+  }>({
+    overview: "",
+    features: "",
+    techstack: "",
+    tasks: "",
+    docs: "",
+  });
 
-  const [pubsubMessages, setPubsubMessages] = useState<
-    Array<{ event: string; data: any; ts: number }>
-  >([]);
   const currentProjectIdRef = useRef<string | null>(null);
+  const unsubRef = useRef<() => void>(null);
 
-  const thoughts = [
-    "Analyzing project requirements...",
-    "Identifying key features and functionalities...",
-    "Evaluating technology stack options...",
-    "Considering scalability and performance needs...",
-    "Mapping out database schema requirements...",
-    "Planning API endpoints and data flow...",
-    "Generating project structure and architecture...",
-    "Creating comprehensive project overview...",
-  ];
+  const thoughts: Record<string, string> = {
+    pipeline_started: "🚀 Starting AI project planning pipeline...",
+    overview_start: "🧩 Generating project overview...",
+    stream_chunk_overview: "🧠 Writing detailed overview section...",
+    overview_end: "✅ Overview section completed.",
+    techstack_start: "💻 Suggesting the best tech stack for your project...",
+    stream_chunk_techstack: "⚙️ Analyzing frameworks, databases, and tools...",
+    techstack_end: "✅ Tech stack section completed.",
+    features_start: "✨ Generating key features and functionalities...",
+    stream_chunk_features: "🔍 Writing detailed feature descriptions...",
+    features_end: "✅ Features section completed.",
+    tasks_start: "✨ Generating tasks for each stage...",
+    stream_chunk_tasks: "🔍 Writing detailed feature descriptions...",
+    tasks_end: "✅ Tasks section completed.",
+    docs_start: "✨ Generating docs for the project...",
+    stream_chunk_docs: "🔍 Writing detailed feature descriptions...",
+    docs_end: "✅ Docs section completed.",
+    pipeline_complete: "🎉 All sections generated! Project plan ready.",
+    stream_error: "❌ Streaming error occurred, please try again.",
+  };
 
   const handleGenerate = async () => {
     const projName = projectInput.trim();
     const projDesc = descriptionInput.trim();
-    const projId = uuidv4();
-    setProjectId(projId);
 
-    // leave previous project room (if any) and join the new one
-    try {
-      if (currentProjectIdRef.current) {
-        leaveRoom(currentProjectIdRef.current);
-      }
-    } catch (e) {}
-    try {
-      joinRoom(projId);
-      currentProjectIdRef.current = projId;
-    } catch (e) {
-      // ignore
-    }
-
-    if (projName.length === 0 || projDesc.length === 0) {
-      showToast("Please provide a project name or idea.", "error");
+    if (!projName || !projDesc) {
+      showToast("Please provide a project name and idea.", "error");
       return;
     }
 
-    try {
-      // mark as generating immediately so UI shows live section
-      setIsGenerating(true);
+    const projId = uuidv4();
+    setProjectId(projId);
+    currentProjectIdRef.current = projId;
 
+    // leave previous project room (if any) and join the new one
+    if (currentProjectIdRef.current && currentProjectIdRef.current !== projId) {
+      leaveRoom(currentProjectIdRef.current);
+    }
+
+    try {
+      joinRoom(projId);
+      currentProjectIdRef.current = projId;
+    } catch (e) {}
+
+    setIsGenerating(true);
+
+    try {
       await axiosPrivate.post(AI_ENDPOINT, {
         project_id: projId,
         project_name: projName,
@@ -105,79 +129,60 @@ export default function HomePage() {
       );
       return;
     }
-
-    try {
-      joinRoom(projId);
-      console.log("Joined room for project:", projId);
-    } catch (e) {
-      // ignore
-    }
-
-    setCurrentThoughtIndex(-1);
-
-    for (let i = 0; i < thoughts.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setCurrentThoughtIndex(i);
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
   };
-
-  const { toggleTheme, isLight } = useThemeContext();
 
   useEffect(() => {
     if (!projectId) return;
 
+    console.log("[Socket] Listening for project:", projectId);
     joinRoom(projectId);
 
-    const off = onProgress((payload) => {
-      console.log("[WebSocket] Received payload:", payload);
+    if (unsubRef.current) unsubRef.current();
 
-      // payload may be sent as JSON string or already-parsed object
-      let p: any = payload;
+    const off = onProgress((payload) => {
+      console.log("[Socket] Received:", payload);
+      let p = payload;
       try {
         if (typeof payload === "string") p = JSON.parse(payload);
-      } catch (err) {
-        // leave p as original
+      } catch (_) {}
+
+      const event = p.event || "unknown";
+      const data = p.data || {};
+
+      const mappedThought = thoughts[event] || null;
+
+      if (mappedThought) {
+        setCurrentThought(mappedThought);
       }
 
-      // normalize fields we expect from backend: { event, data, ts }
-      const event = p.event || p.type || p.event_name || "unknown";
-      const data = p.data ?? p.payload ?? null;
-      const ts = Number(p.ts) || Date.now() / 1000; // backend ts is seconds
+      if (event === "stream_chunk") {
+        setSections((prev) => ({
+          ...prev,
+          [data.step]: (prev[data.step] || "") + data.text,
+        }));
+      }
 
-      const normalized = { event, data, ts };
-      console.log(normalized);
-      setPubsubMessages((prev) => [...prev, normalized]);
-
-      // control UI state based on pipeline events
-      if (
-        event === "pipeline_complete" ||
-        event === "pipeline_done" ||
-        event === "completed"
-      ) {
+      // control generation states
+      if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
         setIsGenerating(false);
-        setCurrentThoughtIndex(-1);
       }
-      if (event === "pipeline_failed" || event === "failed") {
+      if (["pipeline_failed", "failed"].includes(event)) {
         setIsGenerating(false);
-        showToast("AI generation failed. Check logs.", "error");
+        showToast("AI generation failed.", "error");
       }
-      if (
-        event === "pipeline_started" ||
-        event === "queued" ||
-        event === "init"
-      ) {
+      if (["pipeline_started", "queued", "init"].includes(event)) {
         setIsGenerating(true);
       }
     });
 
-    // cleanup
+    unsubRef.current = off;
+
     return () => {
+      console.log("[Socket] Cleanup for", projectId);
       off?.();
       leaveRoom(projectId);
     };
-  }, [projectId, joinRoom, leaveRoom, onProgress]);
+  }, [projectId]);
 
   return (
     <Box
@@ -355,57 +360,47 @@ export default function HomePage() {
           >
             What project are you planning?
           </Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
+
+          {/* ==== Idea (Top) ==== */}
+          <TextField
+            fullWidth
+            label="Project Idea"
+            value={projectInput}
+            onChange={(e) => setProjectInput(e.target.value)}
+            placeholder="Your project idea..."
+            disabled={isGenerating}
+            sx={{
+              mb: 2,
+              "& .MuiOutlinedInput-root": {
+                background: "rgba(0, 0, 0, 0.4)",
+                color: "white",
+                borderRadius: 2,
+                "& fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.1)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(168, 85, 247, 0.5)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#a855f7",
+                },
+              },
+              "& input": {
+                color: "white",
+              },
+            }}
+          />
+
+          {/* ==== Description (Multiline) + Button Row ==== */}
+          <Box sx={{ position: "relative", pb: 10 }}>
             <TextField
               fullWidth
-              value={projectInput}
-              onChange={(e) => setProjectInput(e.target.value)}
-              placeholder="Your project idea..."
-              disabled={isGenerating}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  background: "rgba(0, 0, 0, 0.4)",
-                  color: "white",
-                  borderRadius: 2,
-                  "& fieldset": {
-                    borderColor: "rgba(255, 255, 255, 0.1)",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "rgba(168, 85, 247, 0.5)",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#a855f7",
-                  },
-                },
-                "& input": {
-                  color: "white",
-                  // truncate placeholder and entered text with ellipsis
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
-                },
-                "& .MuiOutlinedInput-input": {
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
-                },
-              }}
-            />
-            <TextField
-              fullWidth
+              multiline
+              minRows={3}
+              label="Description"
               value={descriptionInput}
               onChange={(e) => setDescriptionInput(e.target.value)}
-              placeholder="Describe more your project..."
+              placeholder="Describe your project in more detail..."
               disabled={isGenerating}
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -422,30 +417,14 @@ export default function HomePage() {
                     borderColor: "#a855f7",
                   },
                 },
-                "& input": {
+                "& textarea": {
                   color: "white",
-                  // truncate placeholder and entered text with ellipsis
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
-                },
-                "& .MuiOutlinedInput-input": {
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  "&::placeholder": {
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  },
+                  resize: "none",
+                  lineHeight: 1.5,
                 },
               }}
             />
+            {/* Generate Button */}
             <Button
               variant="contained"
               onClick={handleGenerate}
@@ -453,12 +432,15 @@ export default function HomePage() {
               endIcon={<AutoAwesome />}
               disabled={isGenerating}
               sx={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
                 background: "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
                 color: "white",
-                px: 3,
-                py: 1,
                 fontWeight: 700,
                 textTransform: "none",
+                px: 3,
+                py: 1,
                 "&:hover": {
                   background:
                     "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
@@ -468,143 +450,6 @@ export default function HomePage() {
               {isGenerating ? "Generating..." : "Generate"}
             </Button>
           </Box>
-          <Collapse in={isGenerating}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1,
-                mb: 0,
-                mt: 2,
-                background: "rgba(168, 85, 247, 0.05)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(168, 85, 247, 0.2)",
-                borderRadius: 1,
-                boxShadow: "0 8px 32px rgba(168, 85, 247, 0.2)",
-                // maxWidth: "600px",
-                mx: "auto",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    background:
-                      "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                    borderRadius: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    animation: "pulse 2s ease-in-out infinite",
-                    "@keyframes pulse": {
-                      "0%, 100%": {
-                        boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
-                        transform: "scale(1)",
-                      },
-                      "50%": {
-                        boxShadow: "0 0 40px rgba(168, 85, 247, 0.8)",
-                        transform: "scale(1.05)",
-                      },
-                    },
-                  }}
-                >
-                  <Psychology sx={{ color: "white", fontSize: 20 }} />
-                </Box>
-                <Box
-                  sx={{
-                    flex: 1,
-                    position: "relative",
-                    minHeight: "24px",
-                  }}
-                >
-                  {currentThoughtIndex >= 0 && (
-                    <Typography
-                      key={currentThoughtIndex}
-                      sx={{
-                        color: "rgba(255, 255, 255, 0.9)",
-                        fontSize: "0.95rem",
-                        fontWeight: "bold",
-                        animation: "fadeInOut 1.2s ease-in-out",
-                        "@keyframes fadeInOut": {
-                          "0%": {
-                            opacity: 0,
-                            filter: "blur(4px)",
-                            transform: "translateY(10px)",
-                          },
-                          "20%": {
-                            opacity: 1,
-                            filter: "blur(0px)",
-                            transform: "translateY(0)",
-                          },
-                          "80%": {
-                            opacity: 1,
-                            filter: "blur(0px)",
-                            transform: "translateY(0)",
-                          },
-                          "100%": {
-                            opacity: 0,
-                            filter: "blur(4px)",
-                            transform: "translateY(-10px)",
-                          },
-                        },
-                      }}
-                    >
-                      {thoughts[currentThoughtIndex]}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
-            {/* Recent pubsub messages */}
-            <Paper
-              elevation={0}
-              sx={{
-                mt: 2,
-                p: 2,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.04)",
-                borderRadius: 2,
-              }}
-            >
-              <Typography
-                variant="subtitle2"
-                sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
-              >
-                Live updates
-              </Typography>
-              <Box sx={{ maxHeight: 160, overflow: "auto" }}>
-                {pubsubMessages.length === 0 ? (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    No live messages yet
-                  </Typography>
-                ) : (
-                  pubsubMessages.map((m, i) => (
-                    <Typography
-                      key={i}
-                      variant="body2"
-                      sx={{
-                        color: "rgba(255,255,255,0.8)",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      [
-                      {new Date(
-                        m.ts > 1e12 ? m.ts : m.ts * 1000
-                      ).toLocaleTimeString()}
-                      ] {m.event}:{" "}
-                      {typeof m.data === "number"
-                        ? m.data
-                        : JSON.stringify(m.data)}
-                    </Typography>
-                  ))
-                )}
-              </Box>
-            </Paper>
-          </Collapse>
         </Paper>
 
         {/* Tabs Section */}
@@ -647,105 +492,66 @@ export default function HomePage() {
             <Tab label="Docs" />
           </Tabs>
 
-          {/* Tab Content */}
           <Box sx={{ p: 4 }}>
+            {/* OVERVIEW */}
             {activeTab === 0 && (
-              <Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mb: 3,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        background:
-                          "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                        borderRadius: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Description sx={{ color: "white", fontSize: 20 }} />
-                    </Box>
-                    <Typography
-                      variant="h5"
-                      sx={{ color: "white", fontWeight: 600 }}
-                    >
-                      Overview
-                    </Typography>
-                  </Box>
-                  <Button
-                    startIcon={<Refresh />}
-                    sx={{
-                      color: "#a855f7",
-                      borderColor: "rgba(168, 85, 247, 0.3)",
-                      border: "1px solid",
-                      "&:hover": {
-                        borderColor: "#a855f7",
-                        background: "rgba(168, 85, 247, 0.1)",
-                      },
-                    }}
-                  >
-                    Regenerate
-                  </Button>
-                </Box>
+              <SectionView
+                icon={<Description />}
+                title="Overview"
+                content={sections.overview}
+                // onRegenerate={() => regenerate("overview")}
+              />
+            )}
 
-                <Typography
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.7)",
-                    lineHeight: 1.8,
-                    mb: 4,
-                  }}
-                >
-                  This project aims to help users track their fitness goals with
-                  AI-powered insights and personalized recommendations. The
-                  application will provide workout tracking, nutrition
-                  monitoring, and progress analytics to help users achieve their
-                  health objectives.
-                </Typography>
+            {/* FEATURES */}
+            {activeTab === 1 && (
+              <SectionView
+                icon={<AutoAwesome />}
+                title="Features"
+                content={sections.features}
+                contentRenderer={
+                  <RenderFeaturesStructured content={sections.features || ""} />
+                }
+                // onRegenerate={() => regenerate("features")}
+              />
+            )}
 
-                <Box
-                  sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}
-                >
-                  <Button
-                    startIcon={<GetAppIcon />}
-                    variant="outlined"
-                    sx={{
-                      borderColor: "rgba(255, 255, 255, 0.2)",
-                      color: "white",
-                      "&:hover": {
-                        borderColor: "rgba(255, 255, 255, 0.4)",
-                        background: "rgba(255, 255, 255, 0.05)",
-                      },
-                    }}
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    startIcon={<SaveIcon />}
-                    variant="contained"
-                    sx={{
-                      background:
-                        "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                      boxShadow: "0 4px 20px rgba(59, 130, 246, 0.4)",
-                      "&:hover": {
-                        boxShadow: "0 6px 30px rgba(59, 130, 246, 0.6)",
-                        transform: "translateY(-2px)",
-                      },
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    Save Project
-                  </Button>
-                </Box>
-              </Box>
+            {/* TECH STACK */}
+            {activeTab === 2 && (
+              <SectionView
+                icon={<Computer />}
+                title="Tech Stack"
+                content={sections.techstack}
+                contentRenderer={
+                  <RenderTechStackStructured
+                    content={sections.techstack || ""}
+                  />
+                }
+                // onRegenerate={() => regenerate("techstack")}
+              />
+            )}
+
+            {/* TASKS */}
+            {activeTab === 3 && (
+              <SectionView
+                icon={<ListAlt />}
+                title="Tasks"
+                content={sections.tasks}
+                contentRenderer={
+                  <RenderTasksStructured content={sections.tasks || ""} />
+                }
+                // onRegenerate={() => regenerate("tasks")}
+              />
+            )}
+
+            {/* DOCS */}
+            {activeTab === 4 && (
+              <SectionView
+                icon={<Article />}
+                title="Docs"
+                content={sections.docs}
+                // onRegenerate={() => regenerate("docs")}
+              />
             )}
           </Box>
         </Paper>

@@ -1,20 +1,5 @@
 import { io, Socket } from "socket.io-client";
 
-export type ProgressEvent =
-  | "pipeline_started"
-  | "pipeline_done"
-  | "pipeline_failed"
-  | "overview_start"
-  | "techstack_start"
-  | "features_start"
-  | "pipeline_complete"
-  | "pipeline_progress";
-
-export type ProgressPayload = {
-  event: ProgressEvent;
-  data: Record<string, any>;
-};
-
 let socket: Socket | null = null;
 
 export function getSocket(): Socket {
