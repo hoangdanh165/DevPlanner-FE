@@ -19,6 +19,8 @@ import {
   Computer,
   ListAlt,
   Article,
+  SchemaOutlined,
+  Dashboard,
 } from "@mui/icons-material";
 import { useThemeContext } from "@/themes/theme";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -33,6 +35,7 @@ import { SectionView } from "@/components/common/SectionView";
 import { RenderTasksStructured } from "@/components/common/RenderTasksStructured";
 import RenderFeaturesStructured from "@/components/common/RenderFeaturesStructured";
 import RenderTechStackStructured from "@/components/common/RenderTechStackStructured";
+import { RenderDiagramsStructured } from "@/components/common/RenderDiagramsStructured";
 
 const AI_ENDPOINT =
   import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
@@ -64,6 +67,7 @@ export default function HomePage() {
     techstack: string;
     tasks: string;
     docs: string;
+    diagrams?: string;
   }>({
     overview: "",
     features: "",
@@ -104,6 +108,7 @@ export default function HomePage() {
       techstack: "",
       tasks: "",
       docs: "",
+      diagrams: "",
     });
     setCurrentThought(null);
 
@@ -603,6 +608,7 @@ export default function HomePage() {
             <Tab label="Features" />
             <Tab label="Tech Stack" />
             <Tab label="Tasks" />
+            <Tab label="Diagrams" />
             <Tab label="Docs" />
           </Tabs>
 
@@ -610,7 +616,7 @@ export default function HomePage() {
             {/* OVERVIEW */}
             {activeTab === 0 && (
               <SectionView
-                icon={<Description />}
+                icon={<Dashboard />}
                 title="Overview"
                 content={sections.overview}
                 // onRegenerate={() => regenerate("overview")}
@@ -658,8 +664,21 @@ export default function HomePage() {
               />
             )}
 
-            {/* DOCS */}
+            {/* DIAGRAMS */}
             {activeTab === 4 && (
+              <SectionView
+                icon={<SchemaOutlined />}
+                title="Diagrams"
+                content={sections.diagrams}
+                contentRenderer={
+                  <RenderDiagramsStructured content={sections.diagrams || ""} />
+                }
+                // onRegenerate={() => regenerate("tasks")}
+              />
+            )}
+
+            {/* DOCS */}
+            {activeTab === 5 && (
               <SectionView
                 icon={<Article />}
                 title="Docs"
