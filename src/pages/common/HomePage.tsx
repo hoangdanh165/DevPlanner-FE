@@ -45,11 +45,18 @@ export default function HomePage() {
   const { joinRoom, leaveRoom, onProgress } = useSocketCtx();
 
   const [activeTab, setActiveTab] = useState(0);
+
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [projectInput, setProjectInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentThought, setCurrentThought] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [lastGeneration, setLastGeneration] = useState({
+    id: "",
+    idea: "",
+    description: "",
+  });
 
   const [sections, setSections] = useState<{
     overview: string;
@@ -90,6 +97,16 @@ export default function HomePage() {
   };
 
   const handleGenerate = async () => {
+    // Clean up before starting new generation
+    setSections({
+      overview: "",
+      features: "",
+      techstack: "",
+      tasks: "",
+      docs: "",
+    });
+    setCurrentThought(null);
+
     const projName = projectInput.trim();
     const projDesc = descriptionInput.trim();
 
@@ -120,6 +137,8 @@ export default function HomePage() {
         project_name: projName,
         description: projDesc,
       });
+
+      setLastGeneration({ id: projId, idea: projName, description: projDesc });
     } catch (e) {
       console.warn("AI generation request failed", e);
       setIsGenerating(false);
@@ -165,6 +184,7 @@ export default function HomePage() {
       // control generation states
       if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
         setIsGenerating(false);
+        setProjectId(null);
       }
       if (["pipeline_failed", "failed"].includes(event)) {
         setIsGenerating(false);
@@ -183,6 +203,12 @@ export default function HomePage() {
       leaveRoom(projectId);
     };
   }, [projectId]);
+
+  const hasChangedSinceLastGenerate =
+    projectInput.trim() !== lastGeneration.idea ||
+    descriptionInput.trim() !== lastGeneration.description;
+
+  const isGenerateDisabled = isGenerating || !hasChangedSinceLastGenerate;
 
   return (
     <Box
@@ -424,13 +450,101 @@ export default function HomePage() {
                 },
               }}
             />
+            <Collapse in={isGenerating}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 1,
+                  mb: 0,
+                  mt: 2,
+                  background: "rgba(168, 85, 247, 0.05)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(168, 85, 247, 0.2)",
+                  borderRadius: 1,
+                  boxShadow: "0 8px 32px rgba(168, 85, 247, 0.2)",
+                  // maxWidth: "600px",
+                  mx: "auto",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      background:
+                        "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+                      borderRadius: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      animation: "pulse 2s ease-in-out infinite",
+                      "@keyframes pulse": {
+                        "0%, 100%": {
+                          boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
+                          transform: "scale(1)",
+                        },
+                        "50%": {
+                          boxShadow: "0 0 40px rgba(168, 85, 247, 0.8)",
+                          transform: "scale(1.05)",
+                        },
+                      },
+                    }}
+                  >
+                    <Psychology sx={{ color: "white", fontSize: 20 }} />
+                  </Box>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      position: "relative",
+                      minHeight: "24px",
+                    }}
+                  >
+                    {currentThought && (
+                      <Typography
+                        sx={{
+                          color: "rgba(255, 255, 255, 0.9)",
+                          fontSize: "0.95rem",
+                          fontWeight: "bold",
+                          animation: "fadeInOut 1.2s ease-in-out",
+                          "@keyframes fadeInOut": {
+                            "0%": {
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transform: "translateY(10px)",
+                            },
+                            "20%": {
+                              opacity: 1,
+                              filter: "blur(0px)",
+                              transform: "translateY(0)",
+                            },
+                            "80%": {
+                              opacity: 1,
+                              filter: "blur(0px)",
+                              transform: "translateY(0)",
+                            },
+                            "100%": {
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transform: "translateY(-10px)",
+                            },
+                          },
+                        }}
+                      >
+                        {currentThought}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
+            </Collapse>
             {/* Generate Button */}
             <Button
               variant="contained"
               onClick={handleGenerate}
               size="medium"
               endIcon={<AutoAwesome />}
-              disabled={isGenerating}
+              disabled={isGenerating || isGenerateDisabled}
               sx={{
                 position: "absolute",
                 bottom: 12,
