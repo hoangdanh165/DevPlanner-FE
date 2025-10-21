@@ -1,46 +1,59 @@
 import type { Socket } from "socket.io-client";
 
-export type ProgressEvent =
-  | "pipeline_started"
-  | "overview_start"
-  | "overview_end"
-  | "techstack_start"
-  | "techstack_end"
-  | "features_start"
-  | "features_end"
-  | "tasks_start"
-  | "tasks_end"
-  | "docs_start"
-  | "docs_end"
-  | "pipeline_complete"
-  | "pipeline_progress"
-  | "stream_chunk"
-  | "pipeline_failed";
+// ==== Step Types ====
+export type DiagramStep = "gantt" | "er" | "architecture" | "sequence";
+export type DiagramItem = { type: DiagramStep; code: string };
 
 export type AIGenerationStep =
   | "overview"
   | "features"
   | "techstack"
   | "tasks"
+  | `diagrams_${DiagramStep}`
   | "docs";
 
-export interface ProgressData {
-  step: AIGenerationStep;
-  text: string;
-  [key: string]: any;
+// ==== Event Types ====
+export type ProgressEvent =
+  | "pipeline_started"
+  | "pipeline_complete"
+  | "pipeline_progress"
+  | "pipeline_failed"
+  | `${AIGenerationStep}_start`
+  | `${AIGenerationStep}_end`
+  | "stream_chunk";
+
+// ==== Sections ====
+export interface Sections {
+  overview: string;
+  features: string;
+  techstack: string;
+  tasks: string;
+  docs: string;
+  diagrams: DiagramItem[];
 }
 
-export type ProgressPayload = {
+// ==== Data Payload ====
+export interface ProgressData<T extends AIGenerationStep = AIGenerationStep> {
+  step: T;
+  text: string;
+  [key: string]: unknown;
+}
+
+// ==== Message Payload ====
+export interface ProgressPayload<
+  T extends AIGenerationStep = AIGenerationStep
+> {
   v: number;
   project_id: string;
   event: ProgressEvent;
-  data: ProgressData;
+  data: ProgressData<T>;
   ts: number;
-};
+}
 
-export type SocketContextValue = {
+// ==== Socket Context ====
+export interface SocketContextValue {
   socket: Socket | null;
-  joinRoom: (uploadId: string) => void;
-  leaveRoom: (uploadId: string) => void;
-  onProgress: (handler: (p: ProgressPayload) => void) => () => void;
-};
+  joinRoom: (roomId: string) => void;
+  leaveRoom: (roomId: string) => void;
+  onProgress: (handler: (payload: ProgressPayload) => void) => () => void;
+}

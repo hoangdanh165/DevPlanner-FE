@@ -35,10 +35,11 @@ import { SectionView } from "@/components/common/SectionView";
 import { RenderTasksStructured } from "@/components/common/RenderTasksStructured";
 import RenderFeaturesStructured from "@/components/common/RenderFeaturesStructured";
 import RenderTechStackStructured from "@/components/common/RenderTechStackStructured";
-import { RenderDiagramsStructured } from "@/components/common/RenderDiagramsStructured";
 
 const AI_ENDPOINT =
   import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
+import RenderDiagramsStructured from "./../../components/common/RenderDiagramsStructured";
+import type { DiagramItem, DiagramStep, Sections } from "@/types/all_types";
 
 export default function HomePage() {
   const { auth } = useAuth();
@@ -61,43 +62,74 @@ export default function HomePage() {
     description: "",
   });
 
-  const [sections, setSections] = useState<{
-    overview: string;
-    features: string;
-    techstack: string;
-    tasks: string;
-    docs: string;
-    diagrams?: string;
-  }>({
+  const [sections, setSections] = useState({
     overview: "",
     features: "",
     techstack: "",
     tasks: "",
     docs: "",
+    diagrams: [] as DiagramItem[],
   });
 
   const currentProjectIdRef = useRef<string | null>(null);
   const unsubRef = useRef<() => void>(null);
 
   const thoughts: Record<string, string> = {
+    // ===== Pipeline =====
     pipeline_started: "🚀 Starting AI project planning pipeline...",
+    pipeline_complete:
+      "🎉 All sections generated successfully! Project plan ready.",
+    pipeline_failed: "❌ Pipeline failed. Please try again.",
+    pipeline_progress: "⚙️ Processing...",
+    stream_error: "⚠️ Streaming error occurred, please try again.",
+
+    // ===== Overview =====
     overview_start: "🧩 Generating project overview...",
-    stream_chunk_overview: "🧠 Writing detailed overview section...",
+    stream_chunk_overview: "🧠 Expanding overview section...",
     overview_end: "✅ Overview section completed.",
-    techstack_start: "💻 Suggesting the best tech stack for your project...",
-    stream_chunk_techstack: "⚙️ Analyzing frameworks, databases, and tools...",
+
+    // ===== Tech Stack =====
+    techstack_start: "💻 Analyzing and recommending tech stack...",
+    stream_chunk_techstack: "⚙️ Selecting frameworks, databases, and tools...",
     techstack_end: "✅ Tech stack section completed.",
+
+    // ===== Features =====
     features_start: "✨ Generating key features and functionalities...",
     stream_chunk_features: "🔍 Writing detailed feature descriptions...",
     features_end: "✅ Features section completed.",
-    tasks_start: "✨ Generating tasks for each stage...",
-    stream_chunk_tasks: "🔍 Writing detailed feature descriptions...",
+
+    // ===== Tasks =====
+    tasks_start: "🗂️ Breaking down project into actionable tasks...",
+    stream_chunk_tasks: "📝 Detailing milestones and dependencies...",
     tasks_end: "✅ Tasks section completed.",
-    docs_start: "✨ Generating docs for the project...",
-    stream_chunk_docs: "🔍 Writing detailed feature descriptions...",
-    docs_end: "✅ Docs section completed.",
-    pipeline_complete: "🎉 All sections generated! Project plan ready.",
-    stream_error: "❌ Streaming error occurred, please try again.",
+
+    // ===== Diagrams - Gantt =====
+    diagrams_gantt_start: "🕒 Generating project timeline (Gantt chart)...",
+    stream_chunk_diagrams_gantt: "📆 Adding milestones and dependencies...",
+    diagrams_gantt_end: "✅ Gantt chart completed.",
+
+    // ===== Diagrams - ERD =====
+    diagrams_er_start: "🧱 Building Entity Relationship Diagram (ERD)...",
+    stream_chunk_diagrams_er:
+      "🔗 Defining tables, fields, and relationships...",
+    diagrams_er_end: "✅ ERD diagram completed.",
+
+    // ===== Diagrams - Architecture =====
+    diagrams_architecture_start: "🏗️ Designing System Architecture Diagram...",
+    stream_chunk_diagrams_architecture:
+      "⚙️ Mapping components and data flow...",
+    diagrams_architecture_end: "✅ Architecture diagram completed.",
+
+    // ===== Diagrams - Sequence =====
+    diagrams_sequence_start: "🔄 Creating main Sequence Diagram...",
+    stream_chunk_diagrams_sequence:
+      "📡 Defining interactions between components...",
+    diagrams_sequence_end: "✅ Sequence diagram completed.",
+
+    // ===== Docs =====
+    docs_start: "📝 Generating technical documentation...",
+    stream_chunk_docs: "📖 Writing detailed documentation sections...",
+    docs_end: "✅ Documentation completed.",
   };
 
   const handleGenerate = async () => {
@@ -108,7 +140,7 @@ export default function HomePage() {
       techstack: "",
       tasks: "",
       docs: "",
-      diagrams: "",
+      diagrams: [],
     });
     setCurrentThought(null);
 
@@ -180,14 +212,48 @@ export default function HomePage() {
       }
 
       if (event === "stream_chunk") {
-        setSections((prev) => ({
-          ...prev,
-          [data.step]: (prev[data.step] || "") + data.text,
-        }));
+        setSections((prev) => {
+          // Nếu là diagram
+          if (data.step.startsWith("diagrams_")) {
+            const diagramType = data.step.replace(
+              "diagrams_",
+              ""
+            ) as DiagramStep;
+
+            // Tìm xem diagram này đã tồn tại trong mảng chưa
+            const existingIndex = prev.diagrams.findIndex(
+              (d) => d.type === diagramType
+            );
+
+            let updatedDiagrams;
+
+            if (existingIndex !== -1) {
+              // Append vào diagram hiện có
+              updatedDiagrams = prev.diagrams.map((d, i) =>
+                i === existingIndex ? { ...d, code: d.code + data.text } : d
+              );
+            } else {
+              // Chưa có → thêm mới
+              updatedDiagrams = [
+                ...prev.diagrams,
+                { type: diagramType, code: data.text },
+              ];
+            }
+
+            return { ...prev, diagrams: updatedDiagrams };
+          }
+
+          // Nếu KHÔNG phải diagram (overview, features, techstack,...)
+          return {
+            ...prev,
+            [data.step]: (prev[data.step as keyof Sections] || "") + data.text,
+          };
+        });
       }
 
       // control generation states
       if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
+        console.log(sections.diagrams);
         setIsGenerating(false);
         setProjectId(null);
       }
@@ -579,38 +645,79 @@ export default function HomePage() {
             backdropFilter: "blur(10px)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
             borderRadius: 3,
-            overflow: "hidden",
+            overflow: "visible",
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           }}
         >
-          <Tabs
-            value={activeTab}
-            onChange={(_, newValue) => setActiveTab(newValue)}
+          <Box
             sx={{
+              position: "relative",
               borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-              px: 2,
-              "& .MuiTab-root": {
-                color: "rgba(255, 255, 255, 0.6)",
-                textTransform: "none",
-                fontSize: "1rem",
-                fontWeight: 500,
-                "&.Mui-selected": {
-                  color: "#a855f7",
-                },
-              },
-              "& .MuiTabs-indicator": {
-                background: "linear-gradient(90deg, #a855f7 0%, #ec4899 100%)",
-                height: 3,
-              },
             }}
           >
-            <Tab label="Overview" />
-            <Tab label="Features" />
-            <Tab label="Tech Stack" />
-            <Tab label="Tasks" />
-            <Tab label="Diagrams" />
-            <Tab label="Docs" />
-          </Tabs>
+            {/* Scroll container: handles horizontal scrolling & touch panning on mobile */}
+            <Box
+              sx={{
+                display: "flex",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                msOverflowStyle: "none",
+                scrollbarWidth: "none",
+                "&::-webkit-scrollbar": { display: "none" },
+                // allow horizontal panning gestures to take precedence
+                touchAction: "pan-x",
+              }}
+            >
+              <Tabs
+                value={activeTab}
+                onChange={(_, newValue) => setActiveTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{
+                  px: 1,
+                  "& .MuiTab-root": {
+                    color: "rgba(255, 255, 255, 0.6)",
+                    textTransform: "none",
+                    fontSize: "1rem",
+                    fontWeight: 500,
+                    minWidth: { xs: 100, sm: 120 },
+                    whiteSpace: "nowrap",
+                    "&.Mui-selected": {
+                      color: "#a855f7",
+                    },
+                  },
+                  "& .MuiTabs-indicator": {
+                    background:
+                      "linear-gradient(90deg, #a855f7 0%, #ec4899 100%)",
+                    height: 3,
+                  },
+                }}
+              >
+                <Tab label="Overview" />
+                <Tab label="Features" />
+                <Tab label="Tech Stack" />
+                <Tab label="Tasks" />
+                <Tab label="Diagrams" />
+                <Tab label="Docs" />
+              </Tabs>
+            </Box>
+
+            {/* subtle fade hint when overflow exists */}
+            <Box
+              sx={{
+                display: { xs: "block", md: "none" },
+                position: "absolute",
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 40,
+                pointerEvents: "none",
+                background:
+                  "linear-gradient(90deg, rgba(10,10,10,0), rgba(10,10,10,0.35))",
+              }}
+            />
+          </Box>
 
           <Box sx={{ p: 4 }}>
             {/* OVERVIEW */}
@@ -669,7 +776,7 @@ export default function HomePage() {
               <SectionView
                 icon={<SchemaOutlined />}
                 title="Diagrams"
-                content={sections.diagrams}
+                // content={sections.diagrams}
                 contentRenderer={
                   <RenderDiagramsStructured content={sections.diagrams || ""} />
                 }

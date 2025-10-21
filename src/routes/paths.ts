@@ -15,6 +15,7 @@ export default {
 
   // Main paths
   main: `${rootPaths.root}/dev-planner`,
+  history: `${rootPaths.root}/dev-planner/history`,
 
   // Home paths
   landing_page: `${rootPaths.homeRoot}/landing-page`,

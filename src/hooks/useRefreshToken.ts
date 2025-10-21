@@ -25,7 +25,7 @@ const useRefreshToken = () => {
         {},
         { withCredentials: true }
       );
-
+      console.log("NEW AT: ", response.data.accessToken);
       setAuth((prev) => ({
         ...prev,
         role: response.data.role,

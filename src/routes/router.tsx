@@ -21,6 +21,7 @@ const Forbidden = lazy(() => import("../pages/error/Forbidden"));
 // Home pages
 import LandingPage from "@/pages/landing/LandingPage";
 import HomePage from "@/pages/common/HomePage";
+import HistoryPage from "@/pages/common/HistoryPage";
 
 // Other components
 import PrivateRoute from "@/components/utils/PrivateRoute";
@@ -67,6 +68,14 @@ const routes = [
             element: (
               <PrivateRoute allowedRoles={["user"]}>
                 <HomePage />
+              </PrivateRoute>
+            ),
+          },
+          {
+            path: paths.history,
+            element: (
+              <PrivateRoute allowedRoles={["user"]}>
+                <HistoryPage />
               </PrivateRoute>
             ),
           },
