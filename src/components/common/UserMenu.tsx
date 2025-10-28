@@ -12,7 +12,14 @@ import {
   Typography,
   IconButton,
 } from "@mui/material";
-import { Person, Settings, Logout, Dashboard, Help } from "@mui/icons-material";
+import {
+  Person,
+  Settings,
+  Logout,
+  Help,
+  History,
+  Home,
+} from "@mui/icons-material";
 import type { AuthData } from "@/hooks/useAuth";
 import useSignOut from "@/hooks/useSignOut";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +41,14 @@ export default function UserMenu({ user }: UserMenuProps) {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNavHistory = () => {
+    navigate(paths.history);
+  };
+
+  const handleNavHome = () => {
+    navigate(paths.main);
   };
 
   const handleSignOut = async () => {
@@ -143,11 +158,18 @@ export default function UserMenu({ user }: UserMenuProps) {
 
         <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)", mb: 1 }} />
 
-        <MenuItem>
+        <MenuItem onClick={handleNavHome}>
           <ListItemIcon>
-            <Dashboard fontSize="small" />
+            <Home fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Dashboard</ListItemText>
+          <ListItemText>Home</ListItemText>
+        </MenuItem>
+
+        <MenuItem onClick={handleNavHistory}>
+          <ListItemIcon>
+            <History fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>History</ListItemText>
         </MenuItem>
 
         <MenuItem>

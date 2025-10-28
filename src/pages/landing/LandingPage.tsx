@@ -83,6 +83,10 @@ export default function LandingPage() {
     };
   }, []);
 
+  const handleNavigate = () => {
+    navigate(paths.main);
+  };
+
   const features = [
     {
       icon: <Lightbulb sx={{ fontSize: 48 }} />,
@@ -412,6 +416,7 @@ export default function LandingPage() {
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForward />}
+                  onClick={handleNavigate}
                   sx={{
                     background:
                       "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
