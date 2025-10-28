@@ -1,10 +1,22 @@
+import * as React from "react";
 import { Box, Typography, Button } from "@mui/material";
 import {
   Refresh,
   Save as SaveIcon,
   GetApp as GetAppIcon,
 } from "@mui/icons-material";
-import RenderJSONStructured from "@/components/common/RenderJSONStructured";
+import RenderJSONStructured from "@/components/common/renderer/RenderJSONStructured";
+
+type SectionViewProps = {
+  icon: React.ReactNode;
+  title: string;
+  /** Raw text content (string). Với Diagrams, hãy dùng contentRenderer thay vì content */
+  content?: string;
+  /** Khi cần render phức tạp (diagrams, tables, …) */
+  contentRenderer?: React.ReactNode;
+  onRegenerate?: () => void;
+  readOnly?: boolean;
+};
 
 export function SectionView({
   icon,
@@ -12,16 +24,14 @@ export function SectionView({
   content,
   contentRenderer,
   onRegenerate,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  content?: string;
-  contentRenderer?: React.ReactNode;
-  onRegenerate?: () => void;
-}) {
-  // Default fallback message
-  const hasContent = content && content.trim().length > 0;
+  readOnly = false,
+}: SectionViewProps) {
+  // Chỉ coi là có content khi là string và có ký tự
+  const safeText = typeof content === "string" ? content : "";
+  const hasContent = safeText.trim().length > 0;
   const fallbackMessage = `No ${title.toLowerCase()} generated yet.`;
+
+  const canRegenerate = Boolean(onRegenerate) && !readOnly;
 
   return (
     <Box>
@@ -45,6 +55,7 @@ export function SectionView({
               alignItems: "center",
               justifyContent: "center",
             }}
+            aria-hidden
           >
             {icon}
           </Box>
@@ -52,24 +63,28 @@ export function SectionView({
             {title}
           </Typography>
         </Box>
+
         <Button
           startIcon={<Refresh />}
           sx={{
-            color: "#a855f7",
+            color: canRegenerate ? "#a855f7" : "rgba(255,255,255,0.4)",
             borderColor: "rgba(168, 85, 247, 0.3)",
             border: "1px solid",
             "&:hover": {
-              borderColor: "#a855f7",
-              background: "rgba(168, 85, 247, 0.1)",
+              borderColor: canRegenerate ? "#a855f7" : "rgba(255,255,255,0.3)",
+              background: canRegenerate
+                ? "rgba(168, 85, 247, 0.1)"
+                : "transparent",
             },
           }}
           onClick={onRegenerate}
+          disabled={!canRegenerate}
         >
           Regenerate
         </Button>
       </Box>
 
-      {/* ===== Content Renderer ===== */}
+      {/* ===== Content ===== */}
       <Box
         sx={{
           color: "rgba(255, 255, 255, 0.85)",
@@ -102,7 +117,7 @@ export function SectionView({
         {contentRenderer ? (
           contentRenderer
         ) : hasContent ? (
-          <RenderJSONStructured content={content!} />
+          <RenderJSONStructured content={safeText} />
         ) : (
           <Typography
             sx={{
@@ -133,10 +148,11 @@ export function SectionView({
               background: "rgba(255, 255, 255, 0.05)",
             },
           }}
+          disabled={readOnly}
         >
           Export
         </Button>
-        <Button
+        {/* <Button
           startIcon={<SaveIcon />}
           variant="contained"
           sx={{
@@ -148,9 +164,10 @@ export function SectionView({
             },
             transition: "all 0.3s ease",
           }}
+          disabled={readOnly}
         >
           Save Project
-        </Button>
+        </Button> */}
       </Box>
     </Box>
   );

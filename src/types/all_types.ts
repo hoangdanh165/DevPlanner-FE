@@ -1,28 +1,54 @@
 import type { Socket } from "socket.io-client";
 
-// ==== Step Types ====
+/** ========================
+ *  Section keys (UI-level)
+ *  ======================== */
+export const SECTIONS = [
+  "overview",
+  "features",
+  "techstack",
+  "tasks",
+  "docs",
+  "diagrams",
+] as const;
+
+export type SectionKey = (typeof SECTIONS)[number];
+export interface PlanSections {
+  overview?: string;
+  features?: string;
+  techstack?: string;
+  tasks?: string;
+  diagrams?: string;
+  docs?: string;
+}
+export interface ProjectPlan {
+  id: string;
+  name: string;
+  sections: PlanSections; 
+  updatedAt: string; // ISO string
+}
+export interface PlanViewerProps {
+  plan: ProjectPlan; // dữ liệu vào (1 nguồn sự thật)
+  activeTab: number; // state tab được nâng lên cha hoặc local
+  onTabChange: (index: number) => void; // callback đổi tab
+  onRegenerate?: (key: SectionKey) => void; // optional
+  readOnly?: boolean; // flag UI
+}
+/** ========================
+ *  Diagram sub-steps
+ *  ======================== */
 export type DiagramStep = "gantt" | "er" | "architecture" | "sequence";
 export type DiagramItem = { type: DiagramStep; code: string };
 
-export type AIGenerationStep =
-  | "overview"
-  | "features"
-  | "techstack"
-  | "tasks"
-  | `diagrams_${DiagramStep}`
-  | "docs";
+/** =========================================
+ *  AI Generation Step = SectionKey OR a diagram step token
+ *  ========================================= */
+export type DiagramStepToken = `diagrams_${DiagramStep}`;
+export type AIGenerationStep = SectionKey | DiagramStepToken;
 
-// ==== Event Types ====
-export type ProgressEvent =
-  | "pipeline_started"
-  | "pipeline_complete"
-  | "pipeline_progress"
-  | "pipeline_failed"
-  | `${AIGenerationStep}_start`
-  | `${AIGenerationStep}_end`
-  | "stream_chunk";
-
-// ==== Sections ====
+/** =========
+ *  Sections
+ *  ========= */
 export interface Sections {
   overview: string;
   features: string;
@@ -32,14 +58,30 @@ export interface Sections {
   diagrams: DiagramItem[];
 }
 
-// ==== Data Payload ====
+/** =================
+ *  Progress events
+ *  ================= */
+type ProgressEventBase =
+  | "pipeline_started"
+  | "pipeline_complete"
+  | "pipeline_progress"
+  | "pipeline_failed"
+  | "stream_chunk";
+
+// start/end events are tied to each AIGenerationStep
+export type ProgressEvent =
+  | ProgressEventBase
+  | `${AIGenerationStep}_${"start" | "end"}`;
+
+/** =================
+ *  Payload shapes
+ *  ================= */
 export interface ProgressData<T extends AIGenerationStep = AIGenerationStep> {
   step: T;
   text: string;
   [key: string]: unknown;
 }
 
-// ==== Message Payload ====
 export interface ProgressPayload<
   T extends AIGenerationStep = AIGenerationStep
 > {
@@ -50,7 +92,9 @@ export interface ProgressPayload<
   ts: number;
 }
 
-// ==== Socket Context ====
+/** ======================
+ *  Socket context
+ *  ====================== */
 export interface SocketContextValue {
   socket: Socket | null;
   joinRoom: (roomId: string) => void;

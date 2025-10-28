@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import {
   Box,
   Container,
@@ -32,14 +32,15 @@ import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/contexts/ToastProvider";
 import { SectionView } from "@/components/common/SectionView";
-import { RenderTasksStructured } from "@/components/common/RenderTasksStructured";
-import RenderFeaturesStructured from "@/components/common/RenderFeaturesStructured";
-import RenderTechStackStructured from "@/components/common/RenderTechStackStructured";
+import { RenderTasksStructured } from "@/components/common/renderer/RenderTasksStructured";
+import RenderFeaturesStructured from "@/components/common/renderer/RenderFeaturesStructured";
+import RenderTechStackStructured from "@/components/common/renderer/RenderTechStackStructured";
 
 const AI_ENDPOINT =
   import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
-import RenderDiagramsStructured from "./../../components/common/RenderDiagramsStructured";
+import RenderDiagramsStructured from "@/components/common/renderer/RenderDiagramsStructured";
 import type { DiagramItem, DiagramStep, Sections } from "@/types/all_types";
+import PlanViewer from "@/components/common/PlanView";
 
 export default function HomePage() {
   const { auth } = useAuth();
@@ -280,6 +281,16 @@ export default function HomePage() {
     descriptionInput.trim() !== lastGeneration.description;
 
   const isGenerateDisabled = isGenerating || !hasChangedSinceLastGenerate;
+
+  const plan = useMemo(
+    () => ({
+      id: lastGeneration.id || projectId || "draft",
+      name: lastGeneration.idea || projectInput || "Untitled",
+      updatedAt: new Date().toISOString(),
+      sections, // lấy từ state của bạn
+    }),
+    [lastGeneration.id, lastGeneration.idea, projectId, projectInput, sections]
+  );
 
   return (
     <Box
@@ -636,165 +647,13 @@ export default function HomePage() {
             </Button>
           </Box>
         </Paper>
-
-        {/* Tabs Section */}
-        <Paper
-          elevation={0}
-          sx={{
-            background: "rgba(255, 255, 255, 0.03)",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: 3,
-            overflow: "visible",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-          }}
-        >
-          <Box
-            sx={{
-              position: "relative",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            {/* Scroll container: handles horizontal scrolling & touch panning on mobile */}
-            <Box
-              sx={{
-                display: "flex",
-                overflowX: "auto",
-                WebkitOverflowScrolling: "touch",
-                msOverflowStyle: "none",
-                scrollbarWidth: "none",
-                "&::-webkit-scrollbar": { display: "none" },
-                // allow horizontal panning gestures to take precedence
-                touchAction: "pan-x",
-              }}
-            >
-              <Tabs
-                value={activeTab}
-                onChange={(_, newValue) => setActiveTab(newValue)}
-                variant="scrollable"
-                scrollButtons="auto"
-                allowScrollButtonsMobile
-                sx={{
-                  px: 1,
-                  "& .MuiTab-root": {
-                    color: "rgba(255, 255, 255, 0.6)",
-                    textTransform: "none",
-                    fontSize: "1rem",
-                    fontWeight: 500,
-                    minWidth: { xs: 100, sm: 120 },
-                    whiteSpace: "nowrap",
-                    "&.Mui-selected": {
-                      color: "#a855f7",
-                    },
-                  },
-                  "& .MuiTabs-indicator": {
-                    background:
-                      "linear-gradient(90deg, #a855f7 0%, #ec4899 100%)",
-                    height: 3,
-                  },
-                }}
-              >
-                <Tab label="Overview" />
-                <Tab label="Features" />
-                <Tab label="Tech Stack" />
-                <Tab label="Tasks" />
-                <Tab label="Diagrams" />
-                <Tab label="Docs" />
-              </Tabs>
-            </Box>
-
-            {/* subtle fade hint when overflow exists */}
-            <Box
-              sx={{
-                display: { xs: "block", md: "none" },
-                position: "absolute",
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: 40,
-                pointerEvents: "none",
-                background:
-                  "linear-gradient(90deg, rgba(10,10,10,0), rgba(10,10,10,0.35))",
-              }}
-            />
-          </Box>
-
-          <Box sx={{ p: 4 }}>
-            {/* OVERVIEW */}
-            {activeTab === 0 && (
-              <SectionView
-                icon={<Dashboard />}
-                title="Overview"
-                content={sections.overview}
-                // onRegenerate={() => regenerate("overview")}
-              />
-            )}
-
-            {/* FEATURES */}
-            {activeTab === 1 && (
-              <SectionView
-                icon={<AutoAwesome />}
-                title="Features"
-                content={sections.features}
-                contentRenderer={
-                  <RenderFeaturesStructured content={sections.features || ""} />
-                }
-                // onRegenerate={() => regenerate("features")}
-              />
-            )}
-
-            {/* TECH STACK */}
-            {activeTab === 2 && (
-              <SectionView
-                icon={<Computer />}
-                title="Tech Stack"
-                content={sections.techstack}
-                contentRenderer={
-                  <RenderTechStackStructured
-                    content={sections.techstack || ""}
-                  />
-                }
-                // onRegenerate={() => regenerate("techstack")}
-              />
-            )}
-
-            {/* TASKS */}
-            {activeTab === 3 && (
-              <SectionView
-                icon={<ListAlt />}
-                title="Tasks"
-                content={sections.tasks}
-                contentRenderer={
-                  <RenderTasksStructured content={sections.tasks || ""} />
-                }
-                // onRegenerate={() => regenerate("tasks")}
-              />
-            )}
-
-            {/* DIAGRAMS */}
-            {activeTab === 4 && (
-              <SectionView
-                icon={<SchemaOutlined />}
-                title="Diagrams"
-                // content={sections.diagrams}
-                contentRenderer={
-                  <RenderDiagramsStructured content={sections.diagrams || ""} />
-                }
-                // onRegenerate={() => regenerate("tasks")}
-              />
-            )}
-
-            {/* DOCS */}
-            {activeTab === 5 && (
-              <SectionView
-                icon={<Article />}
-                title="Docs"
-                content={sections.docs}
-                // onRegenerate={() => regenerate("docs")}
-              />
-            )}
-          </Box>
-        </Paper>
+        <PlanViewer
+          plan={plan}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          // onRegenerate={handleRegenerate}
+          // readOnly={false} // mặc định false; có thể bỏ
+        />
       </Container>
     </Box>
   );

@@ -13,26 +13,42 @@ import {
   InputAdornment,
   Stack,
   Pagination,
+  Checkbox,
+  IconButton,
 } from "@mui/material";
-import { History, Search, SortByAlpha, OpenInNew } from "@mui/icons-material";
+import {
+  History,
+  Search,
+  SortByAlpha,
+  OpenInNew,
+  Checklist,
+  DeleteOutline,
+  SelectAll,
+} from "@mui/icons-material";
 import useAuth from "@/hooks/useAuth";
 import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import UserMenu from "@/components/common/UserMenu";
+import { useToast } from "@/contexts/ToastProvider";
+import ProjectDetailsDialog from "@/components/common/PlanDetailDialog";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 interface PlanRecord {
   id: string;
   name: string;
   description: string;
   version: string;
+  status?: string;
   created_at: string;
   updated_at: string;
 }
 
 const GET_ALL_PROJECT_ENDPOINT = "/api/v1/projects/all/";
+const DELETE_MULTIPLE_ENDPOINT = "/api/v1/projects/delete-multiple/";
 
 export default function HistoryPage() {
   const { auth } = useAuth();
   const axiosPrivate = useAxiosPrivate();
+  const { showToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
@@ -40,8 +56,80 @@ export default function HistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // === Fetch dữ liệu phân trang ===
+  const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<any>();
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleViewDetail = async (id: string) => {
+    try {
+      setDetailLoading(true);
+      const res = await axiosPrivate.get(`/api/v1/projects/${id}/detail/`);
+      const { data } = res.data;
+      setPlan(data);
+      setOpen(true);
+    } catch (error) {
+      console.log(error);
+      showToast(String(error), "error");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleToggleSelectMode = () => {
+    setMultiSelectMode((s) => {
+      if (s) setSelectedIds([]); // clear selections when turning off
+      return !s;
+    });
+  };
+
+  const handleToggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      if (checked) return Array.from(new Set([...prev, id]));
+      return prev.filter((x) => x !== id);
+    });
+  };
+
+  const handleDelete = async (ids: string[]) => {
+    const isMultiple = ids.length > 1;
+    const ok = window.confirm(
+      isMultiple
+        ? `Delete ${ids.length} selected plan(s)? This cannot be undone.`
+        : "Are you sure you want to delete this plan?"
+    );
+    if (!ok) return;
+
+    try {
+      setDeleting(true);
+      await axiosPrivate.post(DELETE_MULTIPLE_ENDPOINT, { ids });
+      setPlans((p) => p.filter((pl) => !ids.includes(pl.id)));
+
+      if (isMultiple) {
+        setSelectedIds([]);
+        setMultiSelectMode(false);
+      }
+
+      showToast(
+        isMultiple ? "Deleted selected plans." : "Deleted plan.",
+        "success"
+      );
+    } catch (err) {
+      console.error(err);
+      showToast(
+        `Failed to delete ${isMultiple ? "selected plans" : "plan"}.`,
+        "error"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log(plan);
+  }, [plan]);
   const fetchPlans = async (page = 1) => {
     try {
       setLoading(true);
@@ -54,6 +142,7 @@ export default function HistoryPage() {
       setTotalPages(meta?.total_pages || 1);
     } catch (error) {
       console.error("Failed to fetch projects:", error);
+      showToast(String(error), "error");
     } finally {
       setLoading(false);
     }
@@ -137,7 +226,11 @@ export default function HistoryPage() {
                 Plan History
               </Typography>
             </Box>
-            <UserMenu user={auth} />
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}
+            >
+              <UserMenu user={auth} />
+            </Box>
           </Box>
         </Container>
       </Box>
@@ -212,8 +305,83 @@ export default function HistoryPage() {
             </Button>
           </Box>
         </Paper>
+        <Box
+          sx={{
+            display: "flex",
+            // justifyContent: "space-between",
+            justifyContent: "flex-end",
+            width: "100%",
+          }}
+        >
+          {/* LEFT side: Select All (only visible in multi-select mode) */}
+          {/* {multiSelectMode ? (
+            <IconButton
+                  onClick={() => {
+                    if (selectedIds.length === filteredPlans.length)
+                      setSelectedIds([]);
+                    else setSelectedIds(filteredPlans.map((p) => p.id));
+                  }}
+                  sx={{ color: "rgba(255,255,255,0.8)" }}
+                  title={
+                    selectedIds.length === filteredPlans.length
+                      ? "Unselect all"
+                      : "Select all"
+                  }
+                >
+                  <SelectAll />
+                </IconButton>
+          ) : (
+            <Box /> // giữ không gian cân đối
+          )} */}
 
-        {/* Plans */}
+          {/* RIGHT side: Delete + Checklist */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            {multiSelectMode && (
+              <Box>
+                <IconButton
+                  onClick={() => {
+                    if (selectedIds.length === filteredPlans.length)
+                      setSelectedIds([]);
+                    else setSelectedIds(filteredPlans.map((p) => p.id));
+                  }}
+                  sx={{ color: "rgba(255,255,255,0.8)" }}
+                  title={
+                    selectedIds.length === filteredPlans.length
+                      ? "Unselect all"
+                      : "Select all"
+                  }
+                >
+                  <SelectAll />
+                </IconButton>
+                <Button
+                  onClick={() => handleDelete(selectedIds)}
+                  disabled={selectedIds.length === 0 || deleting}
+                  startIcon={<DeleteOutline />}
+                  sx={{
+                    color: "#fff",
+                    background: "transparent",
+                    textTransform: "none",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                    },
+                  }}
+                >
+                  Delete Selected ({selectedIds.length})
+                </Button>
+              </Box>
+            )}
+
+            <IconButton
+              onClick={() => handleToggleSelectMode()}
+              sx={{ color: "rgba(255,255,255,0.8)" }}
+              title={multiSelectMode ? "Exit multi-select" : "Multi-select"}
+            >
+              <Checklist />
+            </IconButton>
+          </Box>
+        </Box>
+
         {loading ? (
           <Typography sx={{ color: "white" }}>Loading...</Typography>
         ) : filteredPlans.length > 0 ? (
@@ -236,45 +404,113 @@ export default function HistoryPage() {
                     },
                   }}
                 >
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "white", fontWeight: 700, mb: 0.5 }}
-                    >
-                      {plan.name}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        color: "rgba(255,255,255,0.7)",
-                        fontSize: "0.95rem",
-                        mb: 1,
-                      }}
-                    >
-                      {plan.description}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "rgba(255,255,255,0.5)" }}
-                    >
-                      Created: {formatDate(plan.created_at)} — Updated:{" "}
-                      {formatDate(plan.updated_at)}
-                    </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {multiSelectMode && (
+                      <Checkbox
+                        checked={selectedIds.includes(plan.id)}
+                        onChange={(e) =>
+                          handleToggleSelect(plan.id, e.target.checked)
+                        }
+                        sx={{ color: "white" }}
+                      />
+                    )}
+
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        sx={{ color: "white", fontWeight: 700, mb: 0.5 }}
+                      >
+                        {plan.name}
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          // justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: 1,
+                          mb: 1,
+                        }}
+                      >
+                        <Chip
+                          sx={{
+                            color: "#a855f7",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                          }}
+                          label={plan.version}
+                        ></Chip>
+                        <Chip
+                          sx={{
+                            color: "#55f786ff",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                          }}
+                          label={plan.status}
+                        ></Chip>
+                      </Box>
+
+                      <Typography
+                        sx={{
+                          color: "rgba(255,255,255,0.7)",
+                          fontSize: "0.95rem",
+                          mb: 1,
+                        }}
+                      >
+                        {plan.description}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(255,255,255,0.5)" }}
+                      >
+                        Created: {formatDate(plan.created_at)} — Updated:{" "}
+                        {formatDate(plan.updated_at)}
+                      </Typography>
+                    </Box>
                   </Box>
 
-                  <Button
-                    endIcon={<OpenInNew />}
-                    sx={{
-                      background:
-                        "linear-gradient(135deg,#a855f7 0%,#ec4899 100%)",
-                      color: "white",
-                      fontWeight: 600,
-                      textTransform: "none",
-                      borderRadius: 2,
-                      px: 3,
-                    }}
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
                   >
-                    View
-                  </Button>
+                    <IconButton
+                      // endIcon={}
+                      onClick={() => handleViewDetail(plan.id)}
+                      disabled={detailLoading}
+                      sx={{
+                        background: "transparent",
+                        color: "white",
+                        fontWeight: 600,
+                        textTransform: "none",
+                        borderRadius: 2,
+                        px: 3,
+                        "&:hover": {
+                          background:
+                            "linear-gradient(135deg, #9333ea 0%, #db2777 100%)",
+                        },
+                      }}
+                    >
+                      <OpenInNew />
+                    </IconButton>
+
+                    <IconButton
+                      onClick={() => handleDelete([plan.id])}
+                      // startIcon={}
+                      disabled={deleting}
+                      sx={{
+                        background: "transparent",
+                        color: "white",
+                        fontWeight: 600,
+                        textTransform: "none",
+                        borderRadius: 2,
+                        px: 3,
+                        "&:hover": {
+                          background:
+                            "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                        },
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                 </Card>
               ))}
             </Stack>
@@ -284,7 +520,7 @@ export default function HistoryPage() {
               <Pagination
                 count={totalPages}
                 page={currentPage}
-                onChange={(e, page) => setCurrentPage(page)}
+                onChange={(_, page) => setCurrentPage(page)}
                 sx={{
                   "& .MuiPaginationItem-root": { color: "white" },
                   "& .Mui-selected": {
@@ -302,6 +538,11 @@ export default function HistoryPage() {
           </Typography>
         )}
       </Container>
+      <ProjectDetailsDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        project={plan}
+      />
     </Box>
   );
 }

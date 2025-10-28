@@ -25,3 +25,11 @@
     background: #666;
   }
 }
+
+.mermaid .error-icon,
+.mermaid .error-text,
+.mermaid .messageText,
+.mermaid[data-processed="true"].error,
+.mermaid.error {
+  display: none !important;
+}

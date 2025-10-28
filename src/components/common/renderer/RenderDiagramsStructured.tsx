@@ -134,18 +134,41 @@ function DiagramCard({ diagram, id }: { diagram: DiagramItem; id: string }) {
   const draggingRef = useRef(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Render Mermaid SVG
+  // Render Mermaid SVG and auto-fit to container
   useEffect(() => {
-    if (!diagram?.code || !mermaidRef.current) return;
+    if (!diagram?.code || !mermaidRef.current || !containerRef.current) return;
 
     try {
       mermaid.render(id, diagram.code).then(({ svg }) => {
-        if (mermaidRef.current) mermaidRef.current.innerHTML = svg;
+        if (mermaidRef.current) {
+          mermaidRef.current.innerHTML = svg;
+          // Auto-fit: measure SVG and container, set scale
+          setTimeout(() => {
+            const svgEl = mermaidRef.current?.querySelector("svg");
+            const containerEl = containerRef.current;
+            if (svgEl && containerEl) {
+              const svgRect = svgEl.getBoundingClientRect();
+              const contRect = containerEl.getBoundingClientRect();
+              // Use width and height to fit
+              const scaleW = contRect.width / svgRect.width;
+              const scaleH = contRect.height / svgRect.height;
+              const fitScale = Math.min(scaleW, scaleH, 12); // don't zoom too much
+              const scale = fitScale > 0 ? fitScale : 1;
+              // Center: compute offset so diagram is centered after scaling
+              const svgWidth = svgRect.width * scale;
+              const svgHeight = svgRect.height * scale;
+              const offsetX = (contRect.width - svgWidth) / 2;
+              const offsetY = (contRect.height - svgHeight) / 2;
+              setScale(scale);
+              setTranslate({ x: offsetX, y: offsetY });
+            }
+          }, 50); // wait for DOM update
+        }
       });
     } catch (err) {
       console.error("Mermaid render error:", err);
       if (mermaidRef.current)
-        mermaidRef.current.innerHTML = `<p style="color:#ef4444;">Error rendering diagram</p>`;
+        mermaidRef.current.innerHTML = `<p style=\"color:#ef4444;\">Error rendering diagram</p>`;
     }
   }, [diagram.code, id]);
 
@@ -255,35 +278,43 @@ function DiagramCard({ diagram, id }: { diagram: DiagramItem; id: string }) {
           variant="subtitle1"
           sx={{
             color: "#ec4899",
-            fontWeight: 600,
+            fontWeight: 200,
             textTransform: "capitalize",
           }}
         >
-          {/* {diagram.type.replace("diagrams_", "")} */}
+          Hold{" "}
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            Ctrl + Scroll
+          </Box>{" "}
+          To Zoom In/Out
         </Typography>
 
         <Box>
           <Tooltip title="Zoom In">
-            <IconButton size="small" onClick={zoomIn} sx={{ color: "#a855f7" }}>
-              <ZoomIn fontSize="small" />
+            <IconButton
+              size="medium"
+              onClick={zoomIn}
+              sx={{ color: "#a855f7" }}
+            >
+              <ZoomIn fontSize="medium" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Zoom Out">
             <IconButton
-              size="small"
+              size="medium"
               onClick={zoomOut}
               sx={{ color: "#a855f7" }}
             >
-              <ZoomOut fontSize="small" />
+              <ZoomOut fontSize="medium" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Reset Zoom / Position">
             <IconButton
-              size="small"
+              size="medium"
               onClick={resetZoom}
               sx={{ color: "#a855f7" }}
             >
-              <Refresh fontSize="small" />
+              <Refresh fontSize="medium" />
             </IconButton>
           </Tooltip>
         </Box>
