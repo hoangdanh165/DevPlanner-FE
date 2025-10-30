@@ -24,7 +24,7 @@ const PersistSignin: React.FC<PersistSigninProps> = ({ children }) => {
         console.error(err);
 
         const alertShown = Cookies.get("alertShown");
-        if (!alertShown) {
+        if (alertShown == "false") {
           alert("Your session has expired. Please log in again!");
           // `Cookies.set()` type-safe vì @types/js-cookie đã định nghĩa:
           // (name: string, value: string, options?: CookieAttributes) => void

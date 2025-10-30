@@ -1,43 +1,27 @@
 import useAuth from "@/hooks/useAuth";
 import axios from "@/services/axios";
+import type { AuthData } from "@/types/all_types";
 
-const REFRESH_URL = "/api/v1/users/refresh/";
-
-interface RefreshResponse {
-  role: string;
-  accessToken: string;
-  avatar?: string;
-  status?: number;
-  fullName?: string;
-  email?: string;
-  address?: string;
-  phone?: string;
-  userId: string;
-}
+const REFRESH_TOKEN_ENDPOINT = "/api/v1/users/refresh/";
 
 const useRefreshToken = () => {
   const { setAuth } = useAuth();
 
   const refresh = async (): Promise<string> => {
     try {
-      const response = await axios.post<RefreshResponse>(
-        REFRESH_URL,
+      const response = await axios.post<AuthData>(
+        REFRESH_TOKEN_ENDPOINT,
         {},
         { withCredentials: true }
       );
       console.log("NEW AT: ", response.data.accessToken);
-      setAuth((prev) => ({
-        ...prev,
-        role: response.data.role,
-        accessToken: response.data.accessToken,
-        avatar: response.data.avatar,
-        status: response.data.status,
-        fullName: response.data.fullName,
-        email: response.data.email,
-        address: response.data.address,
-        phone: response.data.phone,
-        userId: response.data.userId,
-      }));
+
+      setAuth(
+        (prev: AuthData | null): AuthData => ({
+          ...prev,
+          ...response.data,
+        })
+      );
 
       return response.data.accessToken;
     } catch (error: any) {

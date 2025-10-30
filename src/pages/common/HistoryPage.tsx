@@ -383,7 +383,16 @@ export default function HistoryPage() {
         </Box>
 
         {loading ? (
-          <Typography sx={{ color: "white" }}>Loading...</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "200px",
+            }}
+          >
+            <Typography sx={{ color: "white" }}>Loading...</Typography>
+          </Box>
         ) : filteredPlans.length > 0 ? (
           <>
             <Stack spacing={3}>
@@ -494,7 +503,7 @@ export default function HistoryPage() {
                     <IconButton
                       onClick={() => handleDelete([plan.id])}
                       // startIcon={}
-                      disabled={deleting}
+                      disabled={deleting || detailLoading}
                       sx={{
                         background: "transparent",
                         color: "white",
@@ -533,9 +542,18 @@ export default function HistoryPage() {
             </Box>
           </>
         ) : (
-          <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
-            No plans found.
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "200px",
+            }}
+          >
+            <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
+              No plans found.
+            </Typography>
+          </Box>
         )}
       </Container>
       <ProjectDetailsDialog

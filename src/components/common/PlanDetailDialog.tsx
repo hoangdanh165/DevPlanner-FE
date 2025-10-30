@@ -295,6 +295,7 @@ export default function ProjectDetailsDialog({
           p: 2,
           gap: 1,
           display: "flex",
+          justifyContent: "flex-end", // ✅ căn phải
         }}
       >
         <Button
@@ -310,6 +311,7 @@ export default function ProjectDetailsDialog({
         >
           Share
         </Button>
+
         <Button
           startIcon={<Download />}
           sx={{
@@ -323,7 +325,6 @@ export default function ProjectDetailsDialog({
         >
           Export
         </Button>
-        <Box sx={{ flex: 1 }} />
       </DialogActions>
     </Dialog>
   );

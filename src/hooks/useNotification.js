@@ -4,7 +4,7 @@ import axios from "axios";
 import { useRecoilState } from "recoil";
 import { notificationsAtom } from "./../atoms/notificationsAtom";
 
-const NOTIFICATION_API = "api/v1/notifications/";
+const NOTIFICATION_ENDPOINT = "api/v1/notifications/";
 
 const useNotification = () => {
   const axiosPrivate = useAxiosPrivate();
@@ -19,7 +19,7 @@ const useNotification = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axiosPrivate.get(NOTIFICATION_API, {
+      const res = await axiosPrivate.get(NOTIFICATION_ENDPOINT, {
         params: { page: 1 },
       });
 

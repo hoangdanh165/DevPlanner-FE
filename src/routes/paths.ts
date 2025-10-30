@@ -22,7 +22,7 @@ export default {
   landing_page: `${rootPaths.homeRoot}/landing-page`,
 
   // Error paths
-  404: `${rootPaths.errorRoot}/404`,
+  not_found: `${rootPaths.errorRoot}/404`,
   unauthorized: `/unauthorized`,
   forbidden: `/forbidden`,
   banned: `/banned`,

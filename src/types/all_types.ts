@@ -24,14 +24,14 @@ export interface PlanSections {
 export interface ProjectPlan {
   id: string;
   name: string;
-  sections: PlanSections; 
+  sections: PlanSections;
   updatedAt: string; // ISO string
 }
 export interface PlanViewerProps {
-  plan: ProjectPlan; // dữ liệu vào (1 nguồn sự thật)
-  activeTab: number; // state tab được nâng lên cha hoặc local
-  onTabChange: (index: number) => void; // callback đổi tab
-  onRegenerate?: (key: SectionKey) => void; // optional
+  plan: ProjectPlan;
+  activeTab: number;
+  onTabChange: (index: number) => void;
+  onRegenerate?: (key: SectionKey) => void;
   readOnly?: boolean; // flag UI
 }
 /** ========================
@@ -100,4 +100,19 @@ export interface SocketContextValue {
   joinRoom: (roomId: string) => void;
   leaveRoom: (roomId: string) => void;
   onProgress: (handler: (payload: ProgressPayload) => void) => () => void;
+}
+
+/** ======================
+ *  Auth
+ *  ====================== */
+export interface AuthData {
+  role: string;
+  accessToken: string;
+  avatar: string | null;
+  status: number;
+  fullName: string | null;
+  email: string;
+  address?: string;
+  phone: string | null;
+  userId: string;
 }

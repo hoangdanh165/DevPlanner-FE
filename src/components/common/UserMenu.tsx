@@ -54,6 +54,7 @@ export default function UserMenu({ user }: UserMenuProps) {
   const handleSignOut = async () => {
     await signOut();
     navigate(paths.landing_page);
+    console.log("test");
   };
   // Get initials from name
   const getInitials = (name?: string | null) => {

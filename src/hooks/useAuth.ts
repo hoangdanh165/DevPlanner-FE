@@ -1,17 +1,6 @@
 import { useContext, useDebugValue } from "react";
 import AuthContext from "@/contexts/AuthProvider";
-
-export interface AuthData {
-  role: string;
-  accessToken: string;
-  avatar: string | null;
-  status: number;
-  fullName: string | null;
-  email: string;
-  address?: string;
-  phone: string | null;
-  userId: string;
-}
+import type { AuthData } from "@/types/all_types";
 
 export interface AuthContextType {
   auth: AuthData | null;

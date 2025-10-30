@@ -1,6 +1,6 @@
 import useAuth from "./useAuth";
 import useAxiosPrivate from "./useAxiosPrivate";
-
+import Cookies from "js-cookie";
 const SIGN_OUT_ENDPOINT = "/api/v1/users/sign-out/";
 
 const useSignOut = () => {
@@ -10,10 +10,9 @@ const useSignOut = () => {
   const signOut = async () => {
     localStorage.removeItem("persist");
     localStorage.removeItem("isSignedIn");
-    setAuth(null);
 
     try {
-      axiosPrivate.post(
+      await axiosPrivate.post(
         SIGN_OUT_ENDPOINT,
         {},
         {
@@ -23,6 +22,13 @@ const useSignOut = () => {
     } catch (err) {
       console.error(err);
     }
+
+    await new Promise<void>((resolve) => {
+      Cookies.set("alertShown", "true", { path: "/", expires: 1 });
+
+      setAuth(null);
+      requestAnimationFrame(() => resolve());
+    });
   };
 
   return signOut;
