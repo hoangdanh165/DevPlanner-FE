@@ -51,6 +51,10 @@ export default function UserMenu({ user }: UserMenuProps) {
     navigate(paths.main);
   };
 
+  const handleNavUserProfile = () => {
+    navigate(paths.user_profile);
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate(paths.landing_page);
@@ -173,7 +177,7 @@ export default function UserMenu({ user }: UserMenuProps) {
           <ListItemText>History</ListItemText>
         </MenuItem>
 
-        <MenuItem>
+        <MenuItem onClick={handleNavUserProfile}>
           <ListItemIcon>
             <Person fontSize="small" />
           </ListItemIcon>
