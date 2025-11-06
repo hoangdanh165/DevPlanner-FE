@@ -3,20 +3,22 @@ import { Outlet, createBrowserRouter } from "react-router-dom";
 import { rootPaths } from "@/routes/paths";
 import paths from "@/routes/paths";
 
-const App = lazy(() => import("../App"));
+const App = lazy(() => import("@/App"));
 
 // Layouts
 
 // Auth pages
 const SignIn = lazy(() => import("@/pages/auth/sign-in/SignIn"));
-const SignUp = lazy(() => import("../pages/auth/sign-up/SignUp"));
-// const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
+const SignUp = lazy(() => import("@/pages/auth/sign-up/SignUp"));
+const ForgotPassword = lazy(
+  () => import("@/pages/auth/forgot-password/ForgotPassword")
+);
 
 // Error pages
-const NotFound = lazy(() => import("../pages/error/NotFound"));
-const Unauthorized = lazy(() => import("../pages/error/Unauthorized"));
-const Banned = lazy(() => import("../pages/error/Banned"));
-const Forbidden = lazy(() => import("../pages/error/Forbidden"));
+const NotFound = lazy(() => import("@/pages/error/NotFound"));
+const Unauthorized = lazy(() => import("@/pages/error/Unauthorized"));
+const Banned = lazy(() => import("@/pages/error/Banned"));
+const Forbidden = lazy(() => import("@/pages/error/Forbidden"));
 
 // Home pages
 import LandingPage from "@/pages/landing/LandingPage";
@@ -27,29 +29,29 @@ import UserProfilePage from "@/pages/common/UserProfile";
 // Other components
 import PrivateRoute from "@/components/utils/PrivateRoute";
 import IsSignedIn from "@/components/utils/IsSignedIn";
-import PageLoader from "@/components/utils/PageLoader";
+// import PageLoader from "@/components/utils/PageLoader";
 import Splash from "@/components/utils/Splash";
 import GithubCallback from "@/pages/auth/github/GithubCallback";
-const PersistSignin = lazy(() => import("../components/utils/PersistSignin"));
+const PersistSignin = lazy(() => import("@/components/utils/PersistSignin"));
 
 const createMainLayoutRoutes = () => (
-  <Suspense fallback={<PageLoader />}>
-    <Outlet />
-  </Suspense>
+  // <Suspense fallback={<PageLoader />}>
+  <Outlet />
+  // </Suspense>
 );
 
 const createAuthLayoutRoutes = () => (
-  <Suspense fallback={<PageLoader />}>
-    <Outlet />
-  </Suspense>
+  // <Suspense fallback={<PageLoader />}>
+  <Outlet />
+  // </Suspense>
 );
 const routes = [
   {
     path: "/",
     element: (
-      <Suspense fallback={<Splash />}>
-        <App />
-      </Suspense>
+      // <Suspense fallback={<Splash />}>
+      <App />
+      // </Suspense>
     ),
     children: [
       {
@@ -67,7 +69,7 @@ const routes = [
           {
             path: paths.main,
             element: (
-              <PrivateRoute allowedRoles={["user"]}>
+              <PrivateRoute allowedRoles={["user", "admin"]}>
                 <HomePage />
               </PrivateRoute>
             ),
@@ -75,7 +77,7 @@ const routes = [
           {
             path: paths.history,
             element: (
-              <PrivateRoute allowedRoles={["user"]}>
+              <PrivateRoute allowedRoles={["user", "admin"]}>
                 <HistoryPage />
               </PrivateRoute>
             ),
@@ -83,7 +85,7 @@ const routes = [
           {
             path: paths.user_profile,
             element: (
-              <PrivateRoute allowedRoles={["user"]}>
+              <PrivateRoute allowedRoles={["user", "admin"]}>
                 <UserProfilePage />
               </PrivateRoute>
             ),
@@ -129,14 +131,14 @@ const routes = [
               </IsSignedIn>
             ),
           },
-          // {
-          //   path: paths.forgot_password,
-          //   element: (
-          //     <IsSignedIn>
-          //       <ForgotPassword />
-          //     </IsSignedIn>
-          //   )
-          // },
+          {
+            path: paths.forgot_password,
+            element: (
+              <IsSignedIn>
+                <ForgotPassword />
+              </IsSignedIn>
+            ),
+          },
         ],
       },
       {

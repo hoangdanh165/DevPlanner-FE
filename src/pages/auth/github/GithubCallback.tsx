@@ -1,11 +1,15 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "@/services/axios";
-import useAuth, { type AuthData } from "@/hooks/useAuth";
-import paths from "@/routes/paths";
+import { type AuthData } from "@/types/all_types";
 
-const SIGN_IN_WITH_GITHUB_API = import.meta.env
-  .VITE_SIGN_IN_WITH_GITHUB_API as string;
+import paths from "@/routes/paths";
+import useAuth from "@/hooks/useAuth";
+import CallbackPage from "@/pages/auth/github/CallbackPage";
+
+const SIGN_IN_WITH_GITHUB_ENDPOINT =
+  (import.meta.env.VITE_SIGN_IN_WITH_GITHUB_ENDPOINT as string) ||
+  "http://localhost:8000/api/v1/users/sign-in-with-github/";
 
 export default function GithubCallback() {
   const navigate = useNavigate();
@@ -22,9 +26,12 @@ export default function GithubCallback() {
       }
 
       try {
-        const { data } = await axios.post<AuthData>(SIGN_IN_WITH_GITHUB_API, {
-          code,
-        });
+        const { data } = await axios.post<AuthData>(
+          SIGN_IN_WITH_GITHUB_ENDPOINT,
+          {
+            code,
+          }
+        );
 
         setAuth(data);
         localStorage.setItem("isSignedIn", "true");
@@ -32,12 +39,12 @@ export default function GithubCallback() {
         navigate(paths.main);
       } catch (err: any) {
         console.error("GitHub login failed:", err);
-        navigate(paths.sign_in);
+        // navigate(paths.sign_in);
       }
     };
 
     fetchGithubToken();
   }, [navigate, setAuth]);
 
-  return <p style={{ color: "white" }}>Signing in with GitHub...</p>;
+  return <CallbackPage />;
 }
