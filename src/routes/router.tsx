@@ -21,37 +21,36 @@ const Banned = lazy(() => import("@/pages/error/Banned"));
 const Forbidden = lazy(() => import("@/pages/error/Forbidden"));
 
 // Home pages
-import LandingPage from "@/pages/landing/LandingPage";
-import HomePage from "@/pages/common/HomePage";
-import HistoryPage from "@/pages/common/HistoryPage";
-import UserProfilePage from "@/pages/common/UserProfile";
+const LandingPage = lazy(() => import("@/pages/landing/LandingPage"));
+const HomePage = lazy(() => import("@/pages/common/HomePage"));
+const HistoryPage = lazy(() => import("@/pages/common/HistoryPage"));
+const UserProfilePage = lazy(() => import("@/pages/common/UserProfile"));
 
 // Other components
+const PersistSignin = lazy(() => import("@/components/utils/PersistSignin"));
 import PrivateRoute from "@/components/utils/PrivateRoute";
 import IsSignedIn from "@/components/utils/IsSignedIn";
-// import PageLoader from "@/components/utils/PageLoader";
-import Splash from "@/components/utils/Splash";
+import PageLoader from "@/components/utils/PageLoader";
 import GithubCallback from "@/pages/auth/github/GithubCallback";
-const PersistSignin = lazy(() => import("@/components/utils/PersistSignin"));
 
 const createMainLayoutRoutes = () => (
-  // <Suspense fallback={<PageLoader />}>
-  <Outlet />
-  // </Suspense>
+  <Suspense fallback={<PageLoader />}>
+    <Outlet />
+  </Suspense>
 );
 
 const createAuthLayoutRoutes = () => (
-  // <Suspense fallback={<PageLoader />}>
-  <Outlet />
-  // </Suspense>
+  <Suspense fallback={<PageLoader />}>
+    <Outlet />
+  </Suspense>
 );
 const routes = [
   {
     path: "/",
     element: (
-      // <Suspense fallback={<Splash />}>
-      <App />
-      // </Suspense>
+      <Suspense fallback={<PageLoader />}>
+        <App />
+      </Suspense>
     ),
     children: [
       {

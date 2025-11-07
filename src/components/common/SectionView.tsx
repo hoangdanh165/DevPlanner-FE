@@ -14,7 +14,7 @@ type SectionViewProps = {
   content?: string;
   /** Khi cần render phức tạp (diagrams, tables, …) */
   contentRenderer?: React.ReactNode;
-  onRegenerate?: () => void;
+  onRegenerate?: () => Promise<boolean>;
   readOnly?: boolean;
 };
 
@@ -26,7 +26,6 @@ export function SectionView({
   onRegenerate,
   readOnly = false,
 }: SectionViewProps) {
-  // Chỉ coi là có content khi là string và có ký tự
   const safeText = typeof content === "string" ? content : "";
   const hasContent = safeText.trim().length > 0;
   const fallbackMessage = `No ${title.toLowerCase()} generated yet.`;
@@ -78,7 +77,7 @@ export function SectionView({
             },
           }}
           onClick={onRegenerate}
-          disabled={!canRegenerate}
+          disabled={!canRegenerate || !content}
         >
           Regenerate
         </Button>
@@ -152,22 +151,6 @@ export function SectionView({
         >
           Export
         </Button>
-        {/* <Button
-          startIcon={<SaveIcon />}
-          variant="contained"
-          sx={{
-            background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-            boxShadow: "0 4px 20px rgba(59, 130, 246, 0.4)",
-            "&:hover": {
-              boxShadow: "0 6px 30px rgba(59, 130, 246, 0.6)",
-              transform: "translateY(-2px)",
-            },
-            transition: "all 0.3s ease",
-          }}
-          disabled={readOnly}
-        >
-          Save Project
-        </Button> */}
       </Box>
     </Box>
   );

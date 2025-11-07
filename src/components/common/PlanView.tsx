@@ -15,6 +15,7 @@ import { RenderTasksStructured } from "@/components/common/renderer/RenderTasksS
 import RenderDiagramsStructured from "@/components/common/renderer/RenderDiagramsStructured";
 import type { PlanViewerProps, SectionKey } from "@/types/all_types";
 import { SectionView } from "@/components/common/SectionView";
+import VersionSelector from "@/components/common/VersionSelector";
 
 const SECTIONS: Array<{
   key: SectionKey;
@@ -60,7 +61,6 @@ export default function PlanViewer({
 }: PlanViewerProps) {
   const { sections } = plan;
 
-  // chọn item hiện tại từ index
   const current = SECTIONS[activeTab];
   const rawContent = sections[current.key] ?? "";
 
@@ -81,15 +81,22 @@ export default function PlanViewer({
         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
       }}
     >
-      {/* Tabs header */}
+      {/* Tabs header + Version selector */}
       <Box
         sx={{
           position: "relative",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
+          px: 1,
+          py: 1,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
         }}
       >
+        {/* Tabs scrollable */}
         <Box
           sx={{
+            flex: 1,
             display: "flex",
             overflowX: "auto",
             WebkitOverflowScrolling: "touch",
@@ -97,6 +104,7 @@ export default function PlanViewer({
             scrollbarWidth: "none",
             "&::-webkit-scrollbar": { display: "none" },
             touchAction: "pan-x",
+            position: "relative",
           }}
         >
           <Tabs
@@ -106,13 +114,12 @@ export default function PlanViewer({
             scrollButtons="auto"
             allowScrollButtonsMobile
             sx={{
-              px: 1,
               "& .MuiTab-root": {
                 color: "rgba(255, 255, 255, 0.6)",
                 textTransform: "none",
                 fontSize: "1rem",
                 fontWeight: 500,
-                minWidth: { xs: 100, sm: 120 },
+                minWidth: { xs: 90, sm: 110 },
                 whiteSpace: "nowrap",
                 "&.Mui-selected": { color: "#a855f7" },
               },
@@ -126,22 +133,39 @@ export default function PlanViewer({
               <Tab key={s.key} label={s.label} />
             ))}
           </Tabs>
+
+          {/* fade hint chỉ cho mobile, không đè lên VersionSelector */}
+          <Box
+            sx={{
+              display: { xs: "block", md: "none" },
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 32,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(90deg, rgba(10,10,10,0), rgba(10,10,10,0.6))",
+            }}
+          />
         </Box>
 
-        {/* fade hint mobile */}
+        {/* Version selector sát phải */}
         <Box
           sx={{
-            display: { xs: "block", md: "none" },
-            position: "absolute",
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 40,
-            pointerEvents: "none",
-            background:
-              "linear-gradient(90deg, rgba(10,10,10,0), rgba(10,10,10,0.35))",
+            flexShrink: 0,
+            ml: 1,
           }}
-        />
+        >
+          <VersionSelector
+            currentVersion={"v1"}
+            availableVersions={["v1", "v2"]}
+            loading={false}
+            onChangeVersion={(version) => {
+              console.log("Switch to version:", version);
+            }}
+          />
+        </Box>
       </Box>
 
       {/* Body */}

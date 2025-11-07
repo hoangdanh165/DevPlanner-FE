@@ -1,41 +1,64 @@
-import type { ReactElement } from "react";
-import { Box, Stack, useTheme, CircularProgress } from "@mui/material";
+import { LinearProgress, Box, ThemeProvider, createTheme } from "@mui/material";
 
-const PageLoader = (): ReactElement => {
-  const theme = useTheme();
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    primary: {
+      main: "#9333ea",
+    },
+    secondary: {
+      main: "#ec4899",
+    },
+    background: {
+      default: "#0a0a0a",
+      paper: "#141414",
+    },
+    text: {
+      primary: "#fafafa",
+      secondary: "#a6a6a6",
+    },
+  },
+  typography: {
+    fontFamily: "var(--font-geist-sans)",
+  },
+});
+
+export default function LoadingProgressBar() {
   return (
-    <Stack
-      width="100vw"
-      height="100vh"
-      justifyContent="center"
-      alignItems="center"
-      sx={{ position: "fixed", top: 0, left: 0, zIndex: 9999 }}
-    >
-      <Box textAlign="center">
-        <svg width={0} height={0}>
-          <defs>
-            <linearGradient
-              id="page_loader_gradient"
-              x1="0%"
-              y1="0%"
-              x2="0%"
-              y2="100%"
-            >
-              <stop offset="0%" stopColor={theme.palette.primary.main} />
-              <stop offset="33%" stopColor={theme.palette.secondary.main} />
-              <stop offset="67%" stopColor={theme.palette.info.main} />
-              <stop offset="100%" stopColor={theme.palette.warning.main} />
-            </linearGradient>
-          </defs>
-        </svg>
-        <CircularProgress
-          size={150}
-          thickness={5}
-          sx={{ "svg circle": { stroke: `url(#page_loader_gradient)` } }}
+    <ThemeProvider theme={darkTheme}>
+      <Box
+        sx={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          height: "3px",
+        }}
+      >
+        <LinearProgress
+          sx={{
+            height: "100%",
+            background: "rgba(255, 255, 255, 0.05)",
+            "& .MuiLinearProgress-bar": {
+              background:
+                "linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)",
+              backgroundSize: "200% 100%",
+              animation: "gradientShift 2s ease-in-out infinite",
+              boxShadow:
+                "0 0 20px rgba(147, 51, 234, 0.6), 0 0 40px rgba(236, 72, 153, 0.4)",
+              "@keyframes gradientShift": {
+                "0%": {
+                  backgroundPosition: "200% 0",
+                },
+                "100%": {
+                  backgroundPosition: "-200% 0",
+                },
+              },
+            },
+          }}
         />
       </Box>
-    </Stack>
+    </ThemeProvider>
   );
-};
-
-export default PageLoader;
+}

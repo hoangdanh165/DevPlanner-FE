@@ -253,7 +253,7 @@ export default function ProjectDetailsDialog({
             {diagramSections.length > 0 ? (
               <RenderDiagramsStructured
                 content={diagramSections.map((section) => ({
-                  type: section.title.replace(/diagrams?|chart/gi, "").trim(),
+                  type: section.title.replace(/diagrams_?|chart/gi, "").trim(),
                   code: section.content,
                 }))}
               />

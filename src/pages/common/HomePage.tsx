@@ -4,24 +4,12 @@ import {
   Container,
   TextField,
   Button,
-  Tabs,
-  Tab,
   IconButton,
   Typography,
   Paper,
   Collapse,
 } from "@mui/material";
-import {
-  // Settings,
-  Description,
-  AutoAwesome,
-  Psychology,
-  Computer,
-  ListAlt,
-  Article,
-  SchemaOutlined,
-  Dashboard,
-} from "@mui/icons-material";
+import { Description, AutoAwesome, Psychology } from "@mui/icons-material";
 import { useThemeContext } from "@/themes/theme";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -31,16 +19,12 @@ import { useSocketCtx } from "@/contexts/SocketContext";
 import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/contexts/ToastProvider";
-import { SectionView } from "@/components/common/SectionView";
-import { RenderTasksStructured } from "@/components/common/renderer/RenderTasksStructured";
-import RenderFeaturesStructured from "@/components/common/renderer/RenderFeaturesStructured";
-import RenderTechStackStructured from "@/components/common/renderer/RenderTechStackStructured";
-
-const AI_ENDPOINT =
-  import.meta.env.VITE_AI_API_URL || "/api/v1/ai/generate-plan/";
-import RenderDiagramsStructured from "@/components/common/renderer/RenderDiagramsStructured";
 import type { DiagramItem, DiagramStep, Sections } from "@/types/all_types";
 import PlanViewer from "@/components/common/PlanView";
+
+const AI_GENERATION_ENDPOINT = "/api/v1/ai/generate-plan/";
+
+const AI_REGENERATION_ENDPOINT = "/api/v1/ai/regenerate-section/";
 
 export default function HomePage() {
   const { auth } = useAuth();
@@ -170,12 +154,12 @@ export default function HomePage() {
     setIsGenerating(true);
 
     try {
-      await axiosPrivate.post(AI_ENDPOINT, {
+      await axiosPrivate.post(AI_GENERATION_ENDPOINT, {
         project_id: projId,
         project_name: projName,
         description: projDesc,
       });
-
+      showToast("AI generation started", "info");
       setLastGeneration({ id: projId, idea: projName, description: projDesc });
     } catch (e) {
       console.warn("AI generation request failed", e);
@@ -185,6 +169,33 @@ export default function HomePage() {
         "error"
       );
       return;
+    }
+  };
+
+  const handleRegenerate = async (section: string): Promise<boolean> => {
+    setSections((prev) => ({
+      ...prev,
+      [section]: section === "diagrams" ? [] : "",
+    }));
+
+    console.log(section);
+
+    setIsGenerating(true);
+    try {
+      await axiosPrivate.post(AI_REGENERATION_ENDPOINT, {
+        project_id: projectId,
+        section: section,
+      });
+
+      return true;
+    } catch (e) {
+      console.warn("AI generation request failed", e);
+      setIsGenerating(false);
+      showToast(
+        "Failed to start section regeneration for this plan. Please try again.",
+        "error"
+      );
+      return false;
     }
   };
 
@@ -214,14 +225,12 @@ export default function HomePage() {
 
       if (event === "stream_chunk") {
         setSections((prev) => {
-          // Nếu là diagram
           if (data.step.startsWith("diagrams_")) {
             const diagramType = data.step.replace(
               "diagrams_",
               ""
             ) as DiagramStep;
 
-            // Tìm xem diagram này đã tồn tại trong mảng chưa
             const existingIndex = prev.diagrams.findIndex(
               (d) => d.type === diagramType
             );
@@ -229,12 +238,10 @@ export default function HomePage() {
             let updatedDiagrams;
 
             if (existingIndex !== -1) {
-              // Append vào diagram hiện có
               updatedDiagrams = prev.diagrams.map((d, i) =>
                 i === existingIndex ? { ...d, code: d.code + data.text } : d
               );
             } else {
-              // Chưa có → thêm mới
               updatedDiagrams = [
                 ...prev.diagrams,
                 { type: diagramType, code: data.text },
@@ -244,7 +251,6 @@ export default function HomePage() {
             return { ...prev, diagrams: updatedDiagrams };
           }
 
-          // Nếu KHÔNG phải diagram (overview, features, techstack,...)
           return {
             ...prev,
             [data.step]: (prev[data.step as keyof Sections] || "") + data.text,
@@ -256,7 +262,6 @@ export default function HomePage() {
       if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
         console.log(sections.diagrams);
         setIsGenerating(false);
-        setProjectId(null);
       }
       if (["pipeline_failed", "failed"].includes(event)) {
         setIsGenerating(false);
@@ -272,7 +277,16 @@ export default function HomePage() {
     return () => {
       console.log("[Socket] Cleanup for", projectId);
       off?.();
-      leaveRoom(projectId);
+
+      const isSignedIn = localStorage.getItem("isSignedIn") === "true";
+
+      if (!isSignedIn && projectId) {
+        console.log("[Socket] Leaving room because user signed out");
+        setProjectId(null);
+        leaveRoom(projectId);
+      } else {
+        console.log("[Socket] Keep room, user still signed in");
+      }
     };
   }, [projectId]);
 
@@ -287,7 +301,7 @@ export default function HomePage() {
       id: lastGeneration.id || projectId || "draft",
       name: lastGeneration.idea || projectInput || "Untitled",
       updatedAt: new Date().toISOString(),
-      sections, // lấy từ state của bạn
+      sections,
     }),
     [lastGeneration.id, lastGeneration.idea, projectId, projectInput, sections]
   );
@@ -651,8 +665,8 @@ export default function HomePage() {
           plan={plan}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          // onRegenerate={handleRegenerate}
-          // readOnly={false} // mặc định false; có thể bỏ
+          onRegenerate={handleRegenerate}
+          // readOnly={false}
         />
       </Container>
     </Box>
