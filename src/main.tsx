@@ -13,6 +13,7 @@ import { RecoilRoot } from "recoil";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { ThemeProvider, useThemeContext } from "@/themes/theme";
 import { ToastProvider } from "@/contexts/ToastProvider";
+import { GenerationProvider } from "@/contexts/GenerationContext";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 
@@ -26,11 +27,13 @@ function AppWithTheme() {
         {/* <CssVarsProvider> */}
         <CssBaseline />
         <AuthProvider>
-          <SocketProvider>
-            {/* <LocalizationProvider dateAdapter={AdapterDayjs}> */}
-            <RouterProvider router={router} />
-            {/* </LocalizationProvider> */}
-          </SocketProvider>
+          <GenerationProvider>
+            <SocketProvider>
+              {/* <LocalizationProvider dateAdapter={AdapterDayjs}> */}
+              <RouterProvider router={router} />
+              {/* </LocalizationProvider> */}
+            </SocketProvider>
+          </GenerationProvider>
         </AuthProvider>
         {/* </CssVarsProvider> */}
       </ToastProvider>

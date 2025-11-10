@@ -3,6 +3,17 @@ import type { Socket } from "socket.io-client";
 /** ========================
  *  Section keys (UI-level)
  *  ======================== */
+// export const SECTIONS = [
+//   "overview",
+//   "features",
+//   "techstack",
+//   "tasks",
+//   "docs",
+//   "diagrams",
+// ] as const;
+
+// export type SectionKey = (typeof SECTIONS)[number];
+
 export const SECTIONS = [
   "overview",
   "features",
@@ -12,7 +23,24 @@ export const SECTIONS = [
   "diagrams",
 ] as const;
 
-export type SectionKey = (typeof SECTIONS)[number];
+export const DIAGRAM_VARIANTS = [
+  "er",
+  "sequence",
+  "context",
+  "deployment",
+] as const;
+// tuỳ bạn muốn: er/sequence/flowchart/whatever
+
+export type BaseSectionKey = (typeof SECTIONS)[number];
+export type DiagramVariant = (typeof DIAGRAM_VARIANTS)[number];
+
+export type DiagramSectionKey = `diagrams_${DiagramVariant}`;
+
+// Key mà engine generate dùng:
+export type SectionKey =
+  | Exclude<BaseSectionKey, "diagrams"> // các section thường
+  | DiagramSectionKey; // các diagrams_* cụ thể
+
 export interface PlanSections {
   overview?: string;
   features?: string;

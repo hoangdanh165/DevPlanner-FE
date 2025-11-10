@@ -9,10 +9,10 @@ import {
   SchemaOutlined,
   Article,
 } from "@mui/icons-material";
-import RenderFeaturesStructured from "@/components/common/renderer/RenderFeaturesStructured";
-import RenderTechStackStructured from "@/components/common/renderer/RenderTechStackStructured";
-import { RenderTasksStructured } from "@/components/common/renderer/RenderTasksStructured";
-import RenderDiagramsStructured from "@/components/common/renderer/RenderDiagramsStructured";
+import RenderFeaturesStructured from "@/components/common/renderers/RenderFeaturesStructured";
+import RenderTechStackStructured from "@/components/common/renderers/RenderTechStackStructured";
+import { RenderTasksStructured } from "@/components/common/renderers/RenderTasksStructured";
+import RenderDiagramsStructured from "@/components/common/renderers/RenderDiagramsStructured";
 import type { PlanViewerProps, SectionKey } from "@/types/all_types";
 import { SectionView } from "@/components/common/SectionView";
 import VersionSelector from "@/components/common/VersionSelector";
@@ -21,7 +21,6 @@ const SECTIONS: Array<{
   key: SectionKey;
   label: string;
   icon: React.ReactNode;
-  // factory nhận raw string -> JSX (lazy-safe)
   renderer?: (raw: string) => React.ReactNode;
 }> = [
   { key: "overview", label: "Overview", icon: <Dashboard /> },
@@ -173,12 +172,23 @@ export default function PlanViewer({
         <SectionView
           icon={current.icon}
           title={current.label}
-          content={rawContent}
-          contentRenderer={contentRenderer}
-          onRegenerate={
-            onRegenerate ? () => onRegenerate(current.key) : undefined
-          }
           readOnly={readOnly}
+          // Nếu không phải diagrams -> regenerate nguyên section
+          onRegenerate={
+            current.key !== "diagrams"
+              ? () => onRegenerate(current.key)
+              : undefined
+          }
+          // Nếu là diagrams -> render custom + truyền regenerate từng loại
+          contentRenderer={
+            current.key === "diagrams" ? (
+              <RenderDiagramsStructured
+                content={rawContent} // [{ type: "diagrams_er", code: "..." }, ...]
+                onRegenerate={(diagramKey) => onRegenerate(diagramKey)}
+              />
+            ) : undefined
+          }
+          content={current.key === "diagrams" ? undefined : rawContent}
         />
       </Box>
     </Paper>

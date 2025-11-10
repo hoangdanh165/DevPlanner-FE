@@ -8,10 +8,12 @@ import {
   Tooltip,
   Tabs,
   Tab,
+  Button,
 } from "@mui/material";
 import { ZoomIn, ZoomOut, Refresh } from "@mui/icons-material";
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
+import type { DiagramSectionKey } from "@/types/all_types";
 
 type DiagramItem = {
   type: string;
@@ -19,6 +21,7 @@ type DiagramItem = {
 };
 
 interface Props {
+  onRegenerate?: (key: DiagramSectionKey) => void;
   content: DiagramItem[];
 }
 
@@ -34,7 +37,10 @@ mermaid.initialize({
   },
 });
 
-export default function RenderDiagramsStructured({ content }: Props) {
+export default function RenderDiagramsStructured({
+  content,
+  onRegenerate,
+}: Props) {
   if (!content || content.length === 0) {
     return (
       <Typography
@@ -77,12 +83,18 @@ export default function RenderDiagramsStructured({ content }: Props) {
       />
 
       {/* Tabs: one diagram per tab */}
-      <TabsWrapper content={content} />
+      <TabsWrapper content={content} onRegenerate={onRegenerate} />
     </Box>
   );
 }
 
-function TabsWrapper({ content }: { content: DiagramItem[] }) {
+function TabsWrapper({
+  content,
+  onRegenerate,
+}: {
+  content: DiagramItem[];
+  onRegenerate?: (key: DiagramSectionKey) => void;
+}) {
   const [tab, setTab] = useState(0);
 
   return (
@@ -114,7 +126,11 @@ function TabsWrapper({ content }: { content: DiagramItem[] }) {
         >
           {tab === idx && (
             <Box sx={{ mt: 1 }}>
-              <DiagramCard diagram={diagram} id={`diagram-${idx}`} />
+              <DiagramCard
+                diagram={diagram}
+                id={`diagram-${idx}`}
+                onRegenerate={onRegenerate}
+              />
             </Box>
           )}
         </div>
@@ -124,7 +140,15 @@ function TabsWrapper({ content }: { content: DiagramItem[] }) {
 }
 
 // ==== Diagram Card with zoom ====
-function DiagramCard({ diagram, id }: { diagram: DiagramItem; id: string }) {
+function DiagramCard({
+  diagram,
+  id,
+  onRegenerate,
+}: {
+  diagram: DiagramItem;
+  id: string;
+  onRegenerate?: (key: DiagramSectionKey) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mermaidRef = useRef<HTMLDivElement>(null);
 
@@ -290,6 +314,26 @@ function DiagramCard({ diagram, id }: { diagram: DiagramItem; id: string }) {
         </Typography>
 
         <Box>
+          {onRegenerate && (
+            <Button
+              startIcon={<Refresh />}
+              onClick={() => onRegenerate(diagram.type)}
+              sx={{
+                mr: 1,
+                color: "#a855f7",
+                borderColor: "rgba(168,85,247,0.4)",
+                border: "1px solid",
+                textTransform: "none",
+                "&:hover": {
+                  borderColor: "#a855f7",
+                  background: "rgba(168,85,247,0.12)",
+                },
+              }}
+              size="small"
+            >
+              Regenerate
+            </Button>
+          )}
           <Tooltip title="Zoom In">
             <IconButton
               size="medium"

@@ -1,20 +1,16 @@
 import * as React from "react";
 import { Box, Typography, Button } from "@mui/material";
-import {
-  Refresh,
-  Save as SaveIcon,
-  GetApp as GetAppIcon,
-} from "@mui/icons-material";
-import RenderJSONStructured from "@/components/common/renderer/RenderJSONStructured";
+import { Refresh, GetApp as GetAppIcon } from "@mui/icons-material";
+import RenderJSONStructured from "@/components/common/renderers/RenderJSONStructured";
+import { useGeneration } from "@/contexts/GenerationContext";
+import { useState } from "react";
 
 type SectionViewProps = {
   icon: React.ReactNode;
   title: string;
-  /** Raw text content (string). Với Diagrams, hãy dùng contentRenderer thay vì content */
   content?: string;
-  /** Khi cần render phức tạp (diagrams, tables, …) */
   contentRenderer?: React.ReactNode;
-  onRegenerate?: () => Promise<boolean>;
+  onRegenerate?: () => void;
   readOnly?: boolean;
 };
 
@@ -30,7 +26,21 @@ export function SectionView({
   const hasContent = safeText.trim().length > 0;
   const fallbackMessage = `No ${title.toLowerCase()} generated yet.`;
 
+  const { state } = useGeneration();
+
   const canRegenerate = Boolean(onRegenerate) && !readOnly;
+
+  const handleRegenerateClick = () => {
+    if (!onRegenerate) return;
+    onRegenerate();
+  };
+
+  const isGeneratingThisSection = state.global;
+
+  const regenerateDisabled =
+    !canRegenerate || !hasContent || isGeneratingThisSection;
+
+  const isDiagramSection = title.toLowerCase().includes("diagram");
 
   return (
     <Box>
@@ -62,25 +72,28 @@ export function SectionView({
             {title}
           </Typography>
         </Box>
-
-        <Button
-          startIcon={<Refresh />}
-          sx={{
-            color: canRegenerate ? "#a855f7" : "rgba(255,255,255,0.4)",
-            borderColor: "rgba(168, 85, 247, 0.3)",
-            border: "1px solid",
-            "&:hover": {
-              borderColor: canRegenerate ? "#a855f7" : "rgba(255,255,255,0.3)",
-              background: canRegenerate
-                ? "rgba(168, 85, 247, 0.1)"
-                : "transparent",
-            },
-          }}
-          onClick={onRegenerate}
-          disabled={!canRegenerate || !content}
-        >
-          Regenerate
-        </Button>
+        {!isDiagramSection && (
+          <Button
+            startIcon={<Refresh />}
+            sx={{
+              color: canRegenerate ? "#a855f7" : "rgba(255,255,255,0.4)",
+              borderColor: "rgba(168, 85, 247, 0.3)",
+              border: "1px solid",
+              "&:hover": {
+                borderColor: canRegenerate
+                  ? "#a855f7"
+                  : "rgba(255,255,255,0.3)",
+                background: canRegenerate
+                  ? "rgba(168, 85, 247, 0.1)"
+                  : "transparent",
+              },
+            }}
+            onClick={handleRegenerateClick}
+            disabled={regenerateDisabled}
+          >
+            Regenerate
+          </Button>
+        )}
       </Box>
 
       {/* ===== Content ===== */}

@@ -1,12 +1,5 @@
 import type { FC } from "react";
-import {
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Typography,
-} from "@mui/material";
+import { Box, FormControl, Select, MenuItem, Typography } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 
 interface VersionSelectorProps {
@@ -22,7 +15,6 @@ const VersionSelector: FC<VersionSelectorProps> = ({
   onChangeVersion,
   loading = false,
 }) => {
-  // Gộp current + list, bỏ trùng + bỏ rỗng
   const versions = Array.from(
     new Set(
       [...availableVersions, currentVersion]
@@ -31,7 +23,6 @@ const VersionSelector: FC<VersionSelectorProps> = ({
     )
   );
 
-  // Nếu không có version nào -> text "No version generated"
   if (versions.length === 0) {
     return (
       <Box

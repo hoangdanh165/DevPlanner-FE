@@ -12,10 +12,8 @@ interface AuthContextType {
 
 const defaultContext: AuthContextType = {
   auth: null,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   setAuth: () => {},
   persist: true,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   setPersist: () => {},
 };
 
@@ -28,7 +26,6 @@ interface Props {
 function safeParseBoolean(value: string | null, fallback = true): boolean {
   if (value === null) return fallback;
   try {
-    // handle stored booleans or JSON-encoded values
     const parsed = JSON.parse(value);
     return typeof parsed === "boolean" ? parsed : Boolean(parsed);
   } catch {

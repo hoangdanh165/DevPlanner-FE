@@ -16,6 +16,7 @@ import Brightness7Icon from "@mui/icons-material/Brightness7";
 import UserMenu from "@/components/common/UserMenu";
 import useAuth from "@/hooks/useAuth";
 import { useSocketCtx } from "@/contexts/SocketContext";
+import { useGeneration } from "@/contexts/GenerationContext";
 import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/contexts/ToastProvider";
@@ -32,6 +33,8 @@ export default function HomePage() {
   const axiosPrivate = useAxiosPrivate();
   const { toggleTheme, isLight } = useThemeContext();
   const { joinRoom, leaveRoom, onProgress } = useSocketCtx();
+  const { state, setGlobalGenerating, setSectionGenerating, resetAll } =
+    useGeneration();
 
   const [activeTab, setActiveTab] = useState(0);
 
@@ -187,6 +190,7 @@ export default function HomePage() {
         section: section,
       });
 
+      showToast("Starting section regeneration for this plan.", "info");
       return true;
     } catch (e) {
       console.warn("AI generation request failed", e);
@@ -262,13 +266,16 @@ export default function HomePage() {
       if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
         console.log(sections.diagrams);
         setIsGenerating(false);
+        setGlobalGenerating(false);
       }
       if (["pipeline_failed", "failed"].includes(event)) {
         setIsGenerating(false);
         showToast("AI generation failed.", "error");
+        setGlobalGenerating(false);
       }
       if (["pipeline_started", "queued", "init"].includes(event)) {
         setIsGenerating(true);
+        setGlobalGenerating(true);
       }
     });
 
