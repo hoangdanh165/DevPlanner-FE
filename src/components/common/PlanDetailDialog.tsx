@@ -3,11 +3,11 @@
 import type React from "react";
 import { useState, useMemo } from "react";
 
-import RenderFeaturesStructured from "./renderer/RenderFeaturesStructured";
-import RenderTechStackStructured from "./renderer/RenderTechStackStructured";
-import { RenderTasksStructured } from "./renderer/RenderTasksStructured";
-import RenderDiagramsStructured from "./renderer/RenderDiagramsStructured";
-import RenderJSONStructured from "@/components/common/renderer/RenderJSONStructured";
+import RenderFeaturesStructured from "@/components/common/renderers/RenderFeaturesStructured";
+import RenderTechStackStructured from "@/components/common/renderers/RenderTechStackStructured";
+import { RenderTasksStructured } from "@/components/common/renderers/RenderTasksStructured";
+import RenderDiagramsStructured from "@/components/common/renderers/RenderDiagramsStructured";
+import RenderJSONStructured from "@/components/common/renderers/RenderJSONStructured";
 
 import {
   Dialog,
@@ -174,7 +174,7 @@ export default function ProjectDetailsDialog({
           </Typography>
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Chip
-              label={safeProject.version || ""}
+              label={"v" + safeProject.version || ""}
               size="small"
               sx={{
                 background:
@@ -226,7 +226,12 @@ export default function ProjectDetailsDialog({
           }}
         >
           {topLevelTabs.map((section) => (
-            <Tab key={section.id} label={section.title} />
+            <Tab
+              key={section.id}
+              label={
+                section.title.charAt(0).toUpperCase() + section.title.slice(1)
+              }
+            />
           ))}
         </Tabs>
       </Box>

@@ -1,27 +1,28 @@
 import type { FC } from "react";
 import { Box, FormControl, Select, MenuItem, Typography } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
+import { useGeneration } from "@/contexts/GenerationContext";
 
 interface VersionSelectorProps {
-  currentVersion?: string | null;
-  availableVersions?: string[];
-  onChangeVersion: (version: string) => void;
-  loading?: boolean;
+  onChangeVersion: (version: number) => void;
 }
 
-const VersionSelector: FC<VersionSelectorProps> = ({
-  currentVersion,
-  availableVersions = [],
-  onChangeVersion,
-  loading = false,
-}) => {
+const VersionSelector: FC<VersionSelectorProps> = ({ onChangeVersion }) => {
+  const { state } = useGeneration();
+  const {
+    currentVersion = 0,
+    availableVersions = [],
+    global: isRegenerating,
+  } = state;
+
   const versions = Array.from(
     new Set(
-      [...availableVersions, currentVersion]
-        .filter(Boolean)
-        .map((v) => String(v))
+      [...availableVersions, currentVersion].filter(
+        (v): v is number => typeof v === "number" && v > 0
+      )
     )
-  );
+  ).sort((a, b) => a - b);
 
   if (versions.length === 0) {
     return (
@@ -44,12 +45,18 @@ const VersionSelector: FC<VersionSelectorProps> = ({
     );
   }
 
-  const handleChange = (event: any) => {
-    const value = event.target.value as string;
+  const handleChange = (event: SelectChangeEvent<number>) => {
+    const value = Number(event.target.value);
     if (value && value !== currentVersion) {
       onChangeVersion(value);
     }
   };
+
+  // Đảm bảo Select luôn có giá trị hợp lệ
+  const selectValue =
+    versions.includes(currentVersion) && currentVersion > 0
+      ? currentVersion
+      : versions[versions.length - 1];
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
@@ -67,11 +74,11 @@ const VersionSelector: FC<VersionSelectorProps> = ({
           },
         }}
       >
-        <Select
+        <Select<number>
           labelId="version-select-label"
-          value={currentVersion || versions[0]}
+          value={selectValue}
           onChange={handleChange}
-          disabled={loading}
+          disabled={isRegenerating}
           sx={{
             backgroundColor: "rgba(255,255,255,0.03)",
             borderRadius: 2,
@@ -86,17 +93,11 @@ const VersionSelector: FC<VersionSelectorProps> = ({
             },
           }}
         >
-          {versions
-            .sort((a, b) => {
-              const na = parseInt(a.slice(1)) || 0;
-              const nb = parseInt(b.slice(1)) || 0;
-              return na - nb;
-            })
-            .map((v) => (
-              <MenuItem key={v} value={v}>
-                {v}
-              </MenuItem>
-            ))}
+          {versions.map((v) => (
+            <MenuItem key={v} value={v}>
+              v{v}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
     </Box>

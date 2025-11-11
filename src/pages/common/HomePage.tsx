@@ -4,16 +4,12 @@ import {
   Container,
   TextField,
   Button,
-  IconButton,
   Typography,
   Paper,
   Collapse,
 } from "@mui/material";
-import { Description, AutoAwesome, Psychology } from "@mui/icons-material";
+import { AutoAwesome, Psychology } from "@mui/icons-material";
 import { useThemeContext } from "@/themes/theme";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
-import UserMenu from "@/components/common/UserMenu";
 import useAuth from "@/hooks/useAuth";
 import { useSocketCtx } from "@/contexts/SocketContext";
 import { useGeneration } from "@/contexts/GenerationContext";
@@ -22,9 +18,9 @@ import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/contexts/ToastProvider";
 import type { DiagramItem, DiagramStep, Sections } from "@/types/all_types";
 import PlanViewer from "@/components/common/PlanView";
+import Header from "@/components/common/Header";
 
 const AI_GENERATION_ENDPOINT = "/api/v1/ai/generate-plan/";
-
 const AI_REGENERATION_ENDPOINT = "/api/v1/ai/regenerate-section/";
 
 export default function HomePage() {
@@ -33,13 +29,17 @@ export default function HomePage() {
   const axiosPrivate = useAxiosPrivate();
   const { toggleTheme, isLight } = useThemeContext();
   const { joinRoom, leaveRoom, onProgress } = useSocketCtx();
-  const { state, setGlobalGenerating, setSectionGenerating, resetAll } =
-    useGeneration();
+  const {
+    setGlobalGenerating,
+    setCurrentVersion,
+    appendAvailableVersion,
+    setAvailableVersions,
+  } = useGeneration();
 
   const [activeTab, setActiveTab] = useState(0);
 
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [projectInput, setProjectInput] = useState("");
+  const [projectNameInput, setProjectNameInput] = useState("");
   const [descriptionInput, setDescriptionInput] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -120,7 +120,7 @@ export default function HomePage() {
     docs_end: "✅ Documentation completed.",
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (): Promise<boolean> => {
     // Clean up before starting new generation
     setSections({
       overview: "",
@@ -132,12 +132,12 @@ export default function HomePage() {
     });
     setCurrentThought(null);
 
-    const projName = projectInput.trim();
+    const projName = projectNameInput.trim();
     const projDesc = descriptionInput.trim();
 
     if (!projName || !projDesc) {
       showToast("Please provide a project name and idea.", "error");
-      return;
+      return false;
     }
 
     const projId = uuidv4();
@@ -152,7 +152,9 @@ export default function HomePage() {
     try {
       joinRoom(projId);
       currentProjectIdRef.current = projId;
-    } catch (e) {}
+    } catch (e) {
+      return false;
+    }
 
     setIsGenerating(true);
 
@@ -164,6 +166,7 @@ export default function HomePage() {
       });
       showToast("AI generation started", "info");
       setLastGeneration({ id: projId, idea: projName, description: projDesc });
+      return true;
     } catch (e) {
       console.warn("AI generation request failed", e);
       setIsGenerating(false);
@@ -171,7 +174,7 @@ export default function HomePage() {
         "Failed to start plan generation for this project. Please try again.",
         "error"
       );
-      return;
+      return false;
     }
   };
 
@@ -264,9 +267,16 @@ export default function HomePage() {
 
       // control generation states
       if (["pipeline_complete", "pipeline_done", "completed"].includes(event)) {
-        console.log(sections.diagrams);
+        const new_ver = data.version;
+        setCurrentVersion(new_ver);
+        appendAvailableVersion(new_ver);
         setIsGenerating(false);
         setGlobalGenerating(false);
+
+        localStorage.setItem(
+          "last_project",
+          JSON.stringify({ projectId: projectId })
+        );
       }
       if (["pipeline_failed", "failed"].includes(event)) {
         setIsGenerating(false);
@@ -298,20 +308,69 @@ export default function HomePage() {
   }, [projectId]);
 
   const hasChangedSinceLastGenerate =
-    projectInput.trim() !== lastGeneration.idea ||
-    descriptionInput.trim() !== lastGeneration.description;
+    (projectNameInput ?? "").toString().trim() !==
+      (lastGeneration.idea ?? "").toString().trim() ||
+    (descriptionInput ?? "").toString().trim() !==
+      (lastGeneration.description ?? "").toString().trim();
 
   const isGenerateDisabled = isGenerating || !hasChangedSinceLastGenerate;
 
   const plan = useMemo(
     () => ({
       id: lastGeneration.id || projectId || "draft",
-      name: lastGeneration.idea || projectInput || "Untitled",
+      name: lastGeneration.idea || projectNameInput || "Untitled",
       updatedAt: new Date().toISOString(),
       sections,
     }),
-    [lastGeneration.id, lastGeneration.idea, projectId, projectInput, sections]
+    [
+      lastGeneration.id,
+      lastGeneration.idea,
+      projectId,
+      projectNameInput,
+      sections,
+    ]
   );
+
+  useEffect(() => {
+    const loadLastProject = async (last: string) => {
+      try {
+        const { projectId } = JSON.parse(last);
+
+        const res = await axiosPrivate.get(
+          `/api/v1/projects/${projectId}/detail-main/`
+        );
+
+        const data = res.data?.data;
+        if (!data) return null;
+
+        setCurrentVersion(data.currentVersion);
+        setAvailableVersions(data.availableVersions);
+
+        setProjectNameInput(data.name || "Untitled");
+        setDescriptionInput(data.description || "");
+
+        if (data.sections) {
+          setSections(data.sections);
+        }
+
+        return data;
+      } catch (error) {
+        console.error("Failed to load last project:", error);
+        return null;
+      }
+    };
+
+    const last = localStorage.getItem("last_project");
+
+    if (last) {
+      (async () => {
+        const data = await loadLastProject(last);
+        if (data) {
+          console.log("✅ Loaded project:", data);
+        }
+      })();
+    }
+  }, [auth]);
 
   return (
     <Box
@@ -357,112 +416,7 @@ export default function HomePage() {
       />
 
       {/* Header */}
-      <Box
-        sx={{
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          backdropFilter: "blur(10px)",
-          background: "rgba(0, 0, 0, 0.5)",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-        }}
-      >
-        <Container maxWidth="xl">
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              py: 2,
-            }}
-          >
-            {/* Logo */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  background:
-                    "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                  borderRadius: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
-                }}
-              >
-                <Description sx={{ color: "white" }} />
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  background:
-                    "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Developer Planner
-              </Typography>
-            </Box>
-
-            {/* Actions */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <IconButton
-                onClick={toggleTheme}
-                sx={{
-                  color: "#a855f7",
-                  "&:hover": {
-                    background: "rgba(168, 85, 247, 0.1)",
-                    boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                  },
-                }}
-              >
-                {isLight ? <Brightness4Icon /> : <Brightness7Icon />}
-              </IconButton>
-              {/* <Button
-                variant="contained"
-                color="primary"
-                onClick={toggleTheme}
-                sx={{ minWidth: 0, padding: 1, borderRadius: "50%", mr: 2 }}
-              >
-                {isLight ? <Brightness4Icon /> : <Brightness7Icon />}
-              </Button> */}
-              {/* <IconButton
-                sx={{
-                  color: "#a855f7",
-                  "&:hover": {
-                    background: "rgba(168, 85, 247, 0.1)",
-                    boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                  },
-                }}
-              >
-                <Settings />
-              </IconButton> */}
-              {auth ? (
-                <UserMenu user={auth} />
-              ) : (
-                <Button
-                  variant="outlined"
-                  sx={{
-                    borderColor: "rgba(168, 85, 247, 0.5)",
-                    color: "white",
-                    px: 3,
-                    "&:hover": {
-                      borderColor: "#a855f7",
-                      background: "rgba(168, 85, 247, 0.1)",
-                      boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                    },
-                  }}
-                >
-                  SIGN IN
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </Container>
-      </Box>
+      <Header isLight={isLight} toggleTheme={toggleTheme} auth={auth} />
 
       {/* Main Content */}
       <Container maxWidth="xl" sx={{ py: 6, position: "relative", zIndex: 1 }}>
@@ -494,8 +448,8 @@ export default function HomePage() {
           <TextField
             fullWidth
             label="Project Idea"
-            value={projectInput}
-            onChange={(e) => setProjectInput(e.target.value)}
+            value={projectNameInput}
+            onChange={(e) => setProjectNameInput(e.target.value)}
             placeholder="Your project idea..."
             disabled={isGenerating}
             sx={{

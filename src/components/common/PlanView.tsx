@@ -149,7 +149,6 @@ export default function PlanViewer({
           />
         </Box>
 
-        {/* Version selector sát phải */}
         <Box
           sx={{
             flexShrink: 0,
@@ -157,9 +156,9 @@ export default function PlanViewer({
           }}
         >
           <VersionSelector
-            currentVersion={"v1"}
-            availableVersions={["v1", "v2"]}
-            loading={false}
+            // currentVersion={"v1"}
+            // availableVersions={["v1", "v2"]}
+            // loading={false}
             onChangeVersion={(version) => {
               console.log("Switch to version:", version);
             }}
