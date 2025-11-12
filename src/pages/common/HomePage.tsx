@@ -372,6 +372,26 @@ export default function HomePage() {
     }
   }, [auth]);
 
+  const fetchVersionHistory = async (projectId: string, version: number) => {
+    try {
+      const res = await axiosPrivate.get(
+        `/api/v1/projects/${projectId}/version-history/?version=${version}`
+      );
+
+      const data = res.data?.data;
+      if (!data) return null;
+
+      if (data.sections) {
+        setSections(data.sections);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Failed to load version history:", error);
+      return null;
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -627,6 +647,7 @@ export default function HomePage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onRegenerate={handleRegenerate}
+          onChangeVersion={fetchVersionHistory}
           // readOnly={false}
         />
       </Container>

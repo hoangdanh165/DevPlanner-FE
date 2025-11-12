@@ -56,6 +56,7 @@ export default function PlanViewer({
   activeTab,
   onTabChange,
   onRegenerate,
+  onChangeVersion,
   readOnly = false,
 }: PlanViewerProps) {
   const { sections } = plan;
@@ -155,14 +156,7 @@ export default function PlanViewer({
             ml: 1,
           }}
         >
-          <VersionSelector
-            // currentVersion={"v1"}
-            // availableVersions={["v1", "v2"]}
-            // loading={false}
-            onChangeVersion={(version) => {
-              console.log("Switch to version:", version);
-            }}
-          />
+          <VersionSelector onChangeVersion={onChangeVersion} />
         </Box>
       </Box>
 
