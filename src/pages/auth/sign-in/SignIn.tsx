@@ -14,6 +14,7 @@ import {
   InputAdornment,
   FormControlLabel,
   Checkbox,
+  Divider,
 } from "@mui/material";
 import {
   Email,
@@ -29,6 +30,7 @@ import type { AuthData } from "@/types/all_types";
 import { useToast } from "@/contexts/ToastProvider";
 import useAuth from "@/hooks/useAuth";
 import axios from "@/services/axios";
+import GithubButton from "@/components/auth/GithubButton";
 
 const darkTheme = createTheme({
   palette: {
@@ -464,6 +466,8 @@ export default function SignInPage() {
                     >
                       Create one here
                     </Button>
+                    <Divider sx={{ my: 1.5 }}>or</Divider>
+                    <GithubButton />
                   </Box>
 
                   {/* Divider */}

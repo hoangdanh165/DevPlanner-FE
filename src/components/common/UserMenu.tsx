@@ -20,7 +20,7 @@ import {
   History,
   Home,
 } from "@mui/icons-material";
-import type { AuthData } from "@/hooks/useAuth";
+import type { AuthData } from "@/types/all_types";
 import useSignOut from "@/hooks/useSignOut";
 import { useNavigate } from "react-router-dom";
 import paths from "@/routes/paths";

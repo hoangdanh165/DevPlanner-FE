@@ -10,6 +10,7 @@ const useSignOut = () => {
   const signOut = async () => {
     localStorage.removeItem("persist");
     localStorage.removeItem("isSignedIn");
+    localStorage.removeItem("last_project");
 
     try {
       await axiosPrivate.post(

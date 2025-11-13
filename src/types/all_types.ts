@@ -60,7 +60,7 @@ export interface PlanViewerProps {
   activeTab: number;
   onTabChange: (index: number) => void;
   onRegenerate?: (key: SectionKey) => void;
-  onChangeVersion?: (projectId: string, version: number) => void;
+  onChangeVersion: (version: number) => void;
   readOnly?: boolean; // flag UI
 }
 /** ========================

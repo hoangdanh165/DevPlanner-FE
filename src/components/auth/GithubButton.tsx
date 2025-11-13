@@ -20,6 +20,7 @@ const GithubButton: React.FC<GithubButtonProps> = ({
       variant="outlined"
       onClick={handleGithubLogin}
       startIcon={<GithubIcon />}
+      sx={{ fontWeight: "bold" }}
     >
       {buttonText}
     </Button>

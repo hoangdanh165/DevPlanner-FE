@@ -27,6 +27,7 @@ const useRefreshToken = () => {
     } catch (error: any) {
       if (error.response?.status === 401) {
         localStorage.removeItem("isSignedIn");
+        localStorage.removeItem("last_project");
       }
       throw error;
     }

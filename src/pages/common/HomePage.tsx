@@ -166,6 +166,8 @@ export default function HomePage() {
       });
       showToast("AI generation started", "info");
       setLastGeneration({ id: projId, idea: projName, description: projDesc });
+      setCurrentVersion(0);
+      setAvailableVersions([]);
       return true;
     } catch (e) {
       console.warn("AI generation request failed", e);
@@ -185,6 +187,11 @@ export default function HomePage() {
     }));
 
     console.log(section);
+    const lastProjectRaw = localStorage.getItem("last_project");
+
+    const projectId =
+      (lastProjectRaw && JSON.parse(lastProjectRaw).projectId) ||
+      lastGeneration.id;
 
     setIsGenerating(true);
     try {
@@ -207,6 +214,12 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    const lastProjectRaw = localStorage.getItem("last_project");
+
+    const projectId =
+      (lastProjectRaw && JSON.parse(lastProjectRaw).projectId) ||
+      lastGeneration.id;
+
     if (!projectId) return;
 
     console.log("[Socket] Listening for project:", projectId);
@@ -372,7 +385,13 @@ export default function HomePage() {
     }
   }, [auth]);
 
-  const fetchVersionHistory = async (projectId: string, version: number) => {
+  const fetchVersionHistory = async (version: number) => {
+    const lastProjectRaw = localStorage.getItem("last_project");
+
+    const projectId =
+      (lastProjectRaw && JSON.parse(lastProjectRaw).projectId) ||
+      lastGeneration.id;
+
     try {
       const res = await axiosPrivate.get(
         `/api/v1/projects/${projectId}/version-history/?version=${version}`
@@ -380,11 +399,11 @@ export default function HomePage() {
 
       const data = res.data?.data;
       if (!data) return null;
-
+      console.log(data);
       if (data.sections) {
         setSections(data.sections);
       }
-
+      setCurrentVersion(version);
       return data;
     } catch (error) {
       console.error("Failed to load version history:", error);

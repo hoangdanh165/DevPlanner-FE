@@ -30,6 +30,7 @@ mermaid.initialize({
   startOnLoad: false,
   theme: "dark",
   securityLevel: "loose",
+  suppressErrorRendering: true,
   themeVariables: {
     primaryColor: "#a855f7",
     edgeLabelBackground: "#1e1e1e",

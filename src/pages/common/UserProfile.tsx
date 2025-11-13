@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -12,8 +12,21 @@ import {
   Dialog,
   TextField,
 } from "@mui/material";
-import { Edit, Cancel, Mail, Phone, CalendarMonth } from "@mui/icons-material";
+import {
+  Edit,
+  Cancel,
+  Mail,
+  Phone,
+  CalendarMonth,
+  AccountBox,
+  Person2,
+  LocationOn,
+  AccessTime,
+} from "@mui/icons-material";
 import UserMenu from "@/components/common/UserMenu";
+import useAuth from "@/hooks/useAuth";
+import useAxiosPrivate from "@/hooks/useAxiosPrivate";
+import { useToast } from "@/contexts/ToastProvider";
 
 interface UserData {
   full_name: string;
@@ -33,28 +46,19 @@ interface UserProfileData {
   created_at: string;
 }
 
+const USER_PROFILE_ENDPOINT = "api/v1/users/profile/";
+
 export default function UserProfilePage() {
+  const { auth } = useAuth();
+  const axiosPrivate = useAxiosPrivate();
+  const { showToast } = useToast();
+
   const [isEditing, setIsEditing] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  // Sample data - replace with actual data from your backend
-  const userData: UserData = {
-    full_name: "Sarah Chen",
-    email: "sarah.chen@developer.com",
-    phone: "+1 (555) 123-4567",
-    address: "San Francisco, CA, USA",
-    email_verified: true,
-    avatar: "SC",
-  };
-
-  const userProfileData: UserProfileData = {
-    display_name: "Sarah Chen",
-    preferred_stack: "React, Node.js, PostgreSQL, TypeScript",
-    skill_level: "advanced",
-    timezone: "America/Los_Angeles",
-    ai_temperature: 0.7,
-    created_at: "2024-01-15",
-  };
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userProfileData, setUserProfileData] =
+    useState<UserProfileData | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const getSkillLevelColor = (level: string) => {
     switch (level) {
@@ -73,6 +77,71 @@ export default function UserProfilePage() {
 
   const getSkillLevelLabel = (level: string) => {
     return level.charAt(0).toUpperCase() + level.slice(1);
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosPrivate.get(USER_PROFILE_ENDPOINT);
+        const responseData = res.data.data;
+
+        // Extract user data (full_name, email, phone, address, avatar)
+        const user: UserData = {
+          full_name: responseData.full_name || "",
+          email: responseData.email || "",
+          phone: responseData.phone || "",
+          address: responseData.address || "",
+          email_verified: responseData.email_verified || false,
+          avatar: responseData.avatar,
+        };
+
+        // Extract profile data from nested profile object
+        const profile: UserProfileData = {
+          display_name: responseData.profile?.display_name || "",
+          preferred_stack: Array.isArray(responseData.profile?.preferred_stack)
+            ? responseData.profile.preferred_stack.join(", ")
+            : responseData.profile?.preferred_stack || "",
+          skill_level: (responseData.profile?.skill_level || "intermediate") as
+            | "beginner"
+            | "intermediate"
+            | "advanced"
+            | "expert",
+          timezone: responseData.profile?.timezone || "",
+          ai_temperature: responseData.profile?.ai_temperature || 0.5,
+          created_at:
+            responseData.profile?.created_at || new Date().toISOString(),
+        };
+
+        setUserData(user);
+        setUserProfileData(profile);
+      } catch (error) {
+        console.log(error);
+        showToast("Failed to load user profile", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [axiosPrivate, showToast]);
+
+  // Safe fallback values to avoid null reference errors
+  const displayData = {
+    fullName: userData?.full_name || "Unknown User",
+    email: userData?.email || "N/A",
+    phone: userData?.phone || "N/A",
+    address: userData?.address || "N/A",
+    avatar: userData?.avatar || "N/A",
+    emailVerified: userData?.email_verified || false,
+  };
+
+  const profileData = {
+    skillLevel: userProfileData?.skill_level || "Unknown",
+    preferredStack: userProfileData?.preferred_stack || "Unknown",
+    aiTemperature: userProfileData?.ai_temperature ?? 0.5,
+    timezone: userProfileData?.timezone || "UTC",
+    createdAt: userProfileData?.created_at || new Date().toISOString(),
   };
 
   return (
@@ -152,7 +221,7 @@ export default function UserProfilePage() {
                   boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
                 }}
               >
-                <CalendarMonth sx={{ color: "white" }} />
+                <AccountBox />
               </Box>
               <Typography
                 variant="h6"
@@ -167,10 +236,7 @@ export default function UserProfilePage() {
                 User Profile
               </Typography>
             </Box>
-            <UserMenu
-              userName={userData.full_name}
-              userEmail={userData.email}
-            />
+            <UserMenu user={auth} />
           </Box>
         </Container>
       </Box>
@@ -210,7 +276,7 @@ export default function UserProfilePage() {
                   boxShadow: "0 0 30px rgba(168, 85, 247, 0.5)",
                 }}
               >
-                {userData.avatar}
+                {displayData.avatar}
               </Avatar>
               <Box>
                 <Typography
@@ -221,7 +287,7 @@ export default function UserProfilePage() {
                     mb: 1,
                   }}
                 >
-                  {userData.full_name}
+                  {displayData.fullName}
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Box
@@ -311,9 +377,9 @@ export default function UserProfilePage() {
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography sx={{ color: "white", fontWeight: 500 }}>
-                    {userData.email}
+                    {displayData.email}
                   </Typography>
-                  {userData.email_verified && (
+                  {displayData.emailVerified && (
                     <Box
                       sx={{
                         px: 1.5,
@@ -355,7 +421,7 @@ export default function UserProfilePage() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Phone sx={{ color: "#a855f7", fontSize: "1.2rem" }} />
                   <Typography sx={{ color: "white", fontWeight: 500 }}>
-                    {userData.phone}
+                    {displayData.phone}
                   </Typography>
                 </Box>
               </Box>
@@ -381,11 +447,9 @@ export default function UserProfilePage() {
                   Location
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <CalendarMonth
-                    sx={{ color: "#a855f7", fontSize: "1.2rem" }}
-                  />
+                  <LocationOn sx={{ color: "#a855f7", fontSize: "1.2rem" }} />
                   <Typography sx={{ color: "white", fontWeight: 500 }}>
-                    {userData.address}
+                    {displayData.address}
                   </Typography>
                 </Box>
               </Box>
@@ -417,7 +481,7 @@ export default function UserProfilePage() {
               gap: 1,
             }}
           >
-            <CalendarMonth sx={{ color: "#a855f7" }} />
+            <Person2 sx={{ color: "#a855f7" }} />
             Developer Profile
           </Typography>
 
@@ -447,18 +511,18 @@ export default function UserProfilePage() {
                       px: 2,
                       py: 1,
                       background: `${getSkillLevelColor(
-                        userProfileData.skill_level
+                        profileData.skillLevel
                       )}20`,
                       border: `1px solid ${getSkillLevelColor(
-                        userProfileData.skill_level
+                        profileData.skillLevel
                       )}50`,
                       borderRadius: 1,
-                      color: getSkillLevelColor(userProfileData.skill_level),
+                      color: getSkillLevelColor(profileData.skillLevel),
                       fontWeight: 600,
                       fontSize: "0.9rem",
                     }}
                   >
-                    {getSkillLevelLabel(userProfileData.skill_level)}
+                    {getSkillLevelLabel(profileData.skillLevel)}
                   </Box>
                 </Box>
               </Box>
@@ -487,7 +551,7 @@ export default function UserProfilePage() {
                   <Typography
                     sx={{ color: "white", fontWeight: 600, fontSize: "1.2rem" }}
                   >
-                    {userProfileData.ai_temperature}
+                    {profileData.aiTemperature}
                   </Typography>
                   <Typography
                     sx={{
@@ -495,9 +559,9 @@ export default function UserProfilePage() {
                       fontSize: "0.85rem",
                     }}
                   >
-                    {userProfileData.ai_temperature < 0.5
+                    {profileData.aiTemperature < 0.5
                       ? "Conservative"
-                      : userProfileData.ai_temperature < 0.8
+                      : profileData.aiTemperature < 0.8
                       ? "Balanced"
                       : "Creative"}
                   </Typography>
@@ -525,26 +589,24 @@ export default function UserProfilePage() {
                   Preferred Tech Stack
                 </Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-                  {userProfileData.preferred_stack
-                    .split(", ")
-                    .map((tech, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          px: 2.5,
-                          py: 1,
-                          background:
-                            "linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%)",
-                          border: "1px solid rgba(168, 85, 247, 0.3)",
-                          borderRadius: 2,
-                          color: "white",
-                          fontWeight: 500,
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        {tech}
-                      </Box>
-                    ))}
+                  {profileData.preferredStack.split(", ").map((tech, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        px: 2.5,
+                        py: 1,
+                        background:
+                          "linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%)",
+                        border: "1px solid rgba(168, 85, 247, 0.3)",
+                        borderRadius: 2,
+                        color: "white",
+                        fontWeight: 500,
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {tech}
+                    </Box>
+                  ))}
                 </Box>
               </Box>
             </Grid>
@@ -569,11 +631,9 @@ export default function UserProfilePage() {
                   Timezone
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <CalendarMonth
-                    sx={{ color: "#a855f7", fontSize: "1.2rem" }}
-                  />
+                  <AccessTime sx={{ color: "#a855f7", fontSize: "1.2rem" }} />
                   <Typography sx={{ color: "white", fontWeight: 500 }}>
-                    {userProfileData.timezone}
+                    {profileData.timezone}
                   </Typography>
                 </Box>
               </Box>
@@ -603,7 +663,7 @@ export default function UserProfilePage() {
                     sx={{ color: "#a855f7", fontSize: "1.2rem" }}
                   />
                   <Typography sx={{ color: "white", fontWeight: 500 }}>
-                    {new Date(userProfileData.created_at).toLocaleDateString(
+                    {new Date(profileData.createdAt).toLocaleDateString(
                       "en-US",
                       {
                         year: "numeric",
@@ -675,7 +735,7 @@ export default function UserProfilePage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
               label="Full Name"
-              defaultValue={userData.full_name}
+              defaultValue={displayData.fullName}
               fullWidth
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -695,7 +755,7 @@ export default function UserProfilePage() {
             />
             <TextField
               label="Email"
-              defaultValue={userData.email}
+              defaultValue={displayData.email}
               fullWidth
               sx={{
                 "& .MuiOutlinedInput-root": {
