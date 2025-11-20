@@ -399,10 +399,43 @@ export default function HomePage() {
 
       const data = res.data?.data;
       if (!data) return null;
-      console.log(data);
-      if (data.sections) {
-        setSections(data.sections);
+
+      const sectionsFromApi = data.sections;
+
+      if (sectionsFromApi) {
+        const hasDiagrams =
+          Array.isArray(sectionsFromApi.diagrams) &&
+          sectionsFromApi.diagrams.length > 0;
+
+        if (hasDiagrams) {
+          const newDiagram = sectionsFromApi.diagrams[0] as DiagramItem;
+
+          setSections((prev) => {
+            const { diagrams: _ignored, ...restApiSections } = sectionsFromApi;
+
+            const idx = prev.diagrams.findIndex(
+              (d) => d.type === newDiagram.type
+            );
+
+            let nextDiagrams: DiagramItem[];
+            if (idx !== -1) {
+              nextDiagrams = [...prev.diagrams];
+              nextDiagrams[idx] = newDiagram;
+            } else {
+              nextDiagrams = [...prev.diagrams, newDiagram];
+            }
+
+            return {
+              ...prev,
+              ...restApiSections,
+              diagrams: nextDiagrams,
+            };
+          });
+        } else {
+          setSections(sectionsFromApi);
+        }
       }
+
       setCurrentVersion(version);
       return data;
     } catch (error) {

@@ -146,25 +146,6 @@ export function SectionView({
           </Typography>
         )}
       </Box>
-
-      {/* ===== Footer Buttons ===== */}
-      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-        <Button
-          startIcon={<GetAppIcon />}
-          variant="outlined"
-          sx={{
-            borderColor: "rgba(255, 255, 255, 0.2)",
-            color: "white",
-            "&:hover": {
-              borderColor: "rgba(255, 255, 255, 0.4)",
-              background: "rgba(255, 255, 255, 0.05)",
-            },
-          }}
-          disabled={readOnly}
-        >
-          Export
-        </Button>
-      </Box>
     </Box>
   );
 }

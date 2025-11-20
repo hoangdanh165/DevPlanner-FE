@@ -24,13 +24,13 @@ import {
   Checklist,
   DeleteOutline,
   SelectAll,
+  Delete,
 } from "@mui/icons-material";
 import useAuth from "@/hooks/useAuth";
 import useAxiosPrivate from "@/hooks/useAxiosPrivate";
 import UserMenu from "@/components/common/UserMenu";
 import { useToast } from "@/contexts/ToastProvider";
 import ProjectDetailsDialog from "@/components/common/PlanDetailDialog";
-import DeleteIcon from "@mui/icons-material/Delete";
 
 interface PlanRecord {
   id: string;
@@ -446,7 +446,7 @@ export default function HistoryPage() {
                             fontWeight: 600,
                             fontSize: "0.9rem",
                           }}
-                          label={plan.version}
+                          label={"v" + plan.version}
                         ></Chip>
                         <Chip
                           sx={{
@@ -517,7 +517,7 @@ export default function HistoryPage() {
                         },
                       }}
                     >
-                      <DeleteIcon />
+                      <Delete />
                     </IconButton>
                   </Box>
                 </Card>

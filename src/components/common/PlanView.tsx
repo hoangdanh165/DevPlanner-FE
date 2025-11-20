@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Paper, Box, Tabs, Tab } from "@mui/material";
+import { Paper, Box, Tabs, Tab, Button } from "@mui/material";
 
 import {
   Dashboard,
@@ -16,6 +16,7 @@ import RenderDiagramsStructured from "@/components/common/renderers/RenderDiagra
 import type { PlanViewerProps, SectionKey } from "@/types/all_types";
 import { SectionView } from "@/components/common/SectionView";
 import VersionSelector from "@/components/common/VersionSelector";
+import { GetApp } from "@mui/icons-material";
 
 const SECTIONS: Array<{
   key: SectionKey;
@@ -150,13 +151,24 @@ export default function PlanViewer({
           />
         </Box>
 
-        <Box
-          sx={{
-            flexShrink: 0,
-            ml: 1,
-          }}
-        >
+        <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
           <VersionSelector onChangeVersion={onChangeVersion} />
+
+          <Button
+            startIcon={<GetApp />}
+            variant="outlined"
+            sx={{
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              "&:hover": {
+                borderColor: "rgba(255, 255, 255, 0.4)",
+                background: "rgba(255, 255, 255, 0.05)",
+              },
+            }}
+            disabled={readOnly}
+          >
+            Export
+          </Button>
         </Box>
       </Box>
 
@@ -179,7 +191,9 @@ export default function PlanViewer({
                 content={rawContent} // [{ type: "diagrams_er", code: "..." }, ...]
                 onRegenerate={(diagramKey) => onRegenerate(diagramKey)}
               />
-            ) : undefined
+            ) : (
+              contentRenderer
+            )
           }
           content={current.key === "diagrams" ? undefined : rawContent}
         />
