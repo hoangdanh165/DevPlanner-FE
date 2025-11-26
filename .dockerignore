@@ -1,0 +1,63 @@
+# --- Git / meta ---
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+# Top-level virtualenvs
+.venv
+.websocket.venv
+venv
+env
+
+# Python cache & build artifacts
+**/__pycache__/
+**/*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / frontend stuff
+**/node_modules/
+**/.npm/
+**/.yarn/
+**/.pnpm-store/
+**/dist/
+**/build/
+**/.next/
+**/.nuxt/
+**/.cache/
+**/.turbo/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# Local databases (dev only)
+*.sqlite3
+
+# Env files / secrets (usually not needed in build context)
+.env
+.env.*
+envs/
