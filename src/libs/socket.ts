@@ -17,7 +17,5 @@ export function getSocket(): Socket {
     reconnectionDelay: 500,
     reconnectionDelayMax: 4000,
   });
-
-  console.log(socket);
   return socket;
 }
