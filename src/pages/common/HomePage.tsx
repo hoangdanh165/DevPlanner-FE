@@ -216,14 +216,14 @@ export default function HomePage() {
   useEffect(() => {
     const lastProjectRaw = localStorage.getItem("last_project");
 
-    const projectId =
+    const projId =
       (lastProjectRaw && JSON.parse(lastProjectRaw).projectId) ||
       lastGeneration.id;
 
-    if (!projectId) return;
+    if (!projId) return;
 
-    console.log("[Socket] Listening for project:", projectId);
-    joinRoom(projectId);
+    console.log("[Socket] Listening for project:", projId);
+    joinRoom(projId);
 
     if (unsubRef.current) unsubRef.current();
 
@@ -288,7 +288,7 @@ export default function HomePage() {
 
         localStorage.setItem(
           "last_project",
-          JSON.stringify({ projectId: projectId })
+          JSON.stringify({ projectId: projId })
         );
       }
       if (["pipeline_failed", "failed"].includes(event)) {
@@ -305,15 +305,15 @@ export default function HomePage() {
     unsubRef.current = off;
 
     return () => {
-      console.log("[Socket] Cleanup for", projectId);
+      console.log("[Socket] Cleanup for", projId);
       off?.();
 
       const isSignedIn = localStorage.getItem("isSignedIn") === "true";
 
-      if (!isSignedIn && projectId) {
+      if (!isSignedIn && projId) {
         console.log("[Socket] Leaving room because user signed out");
         setProjectId(null);
-        leaveRoom(projectId);
+        leaveRoom(projId);
       } else {
         console.log("[Socket] Keep room, user still signed in");
       }
