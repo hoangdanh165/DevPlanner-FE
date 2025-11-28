@@ -11,11 +11,13 @@ export function getSocket(): Socket {
   socket = io(URL, {
     path: PATH,
     transports: ["websocket"],
-    autoConnect: false, // chủ động connect khi provider mount
+    autoConnect: false,
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 500,
     reconnectionDelayMax: 4000,
   });
+
+  console.log(socket);
   return socket;
 }
