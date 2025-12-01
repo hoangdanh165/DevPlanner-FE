@@ -218,7 +218,8 @@ export default function HomePage() {
 
     const projId =
       (lastProjectRaw && JSON.parse(lastProjectRaw).projectId) ||
-      lastGeneration.id;
+      lastGeneration.id ||
+      projectId;
 
     if (!projId) return;
 
