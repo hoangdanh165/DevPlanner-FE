@@ -275,13 +275,13 @@ export default function ProjectDetailsDialog({
           </>
         ) : activeSection ? (
           <>
-            <Typography
+            {/* <Typography
               variant="h6"
               sx={{ color: "white", fontWeight: 600, mb: 2 }}
             >
               {activeSection.title}
-            </Typography>
-            <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)", mb: 2 }} />
+            </Typography> */}
+            {/* <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)", mb: 2 }} /> */}
             {renderSectionContent(activeSection)}
           </>
         ) : (
